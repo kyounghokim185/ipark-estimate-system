@@ -321,7 +321,7 @@ ${scopeContext}
                     <div className="bg-blue-600 p-2.5 rounded-2xl shadow-lg shadow-blue-600/20">
                         <Building2 className="text-white" size={24} />
                     </div>
-                    <h1 className="text-xl font-bold tracking-tight text-slate-800">IPARK MALL <span className="text-blue-600">Smart Estimator</span></h1>
+                    <h1 className="text-xl font-bold tracking-tight text-slate-800">IPARK MALL <span className="text-blue-600">Smart Estimator (V2)</span></h1>
                 </div>
                 <div className="flex items-center gap-4 text-sm font-medium text-slate-500">
                     <button onClick={() => setIsAiOpen(!isAiOpen)}
