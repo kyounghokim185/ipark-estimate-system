@@ -314,20 +314,18 @@ ${scopeContext}
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 font-sans text-slate-900 pb-12 print:bg-white print:p-0">
-            {/* Header (Hidden on Print) */}
-            <header
-                className="bg-white border-b sticky top-0 z-30 px-6 py-4 flex justify-between items-center shadow-sm no-print">
+        <div className="min-h-screen bg-[#F8FAFC] font-sans text-slate-900 pb-20 print:bg-white print:p-0">
+            {/* Header */}
+            <header className="bg-white/80 backdrop-blur-md border-b border-slate-200/60 sticky top-0 z-30 px-6 py-4 flex justify-between items-center shadow-sm no-print transition-all">
                 <div className="flex items-center gap-3">
-                    <div className="bg-blue-600 p-2 rounded-lg">
+                    <div className="bg-blue-600 p-2.5 rounded-2xl shadow-lg shadow-blue-600/20">
                         <Building2 className="text-white" size={24} />
                     </div>
-                    <h1 className="text-xl font-bold tracking-tight">IPARK MALL <span className="text-blue-600">Smart
-                        Estimator</span></h1>
+                    <h1 className="text-xl font-bold tracking-tight text-slate-800">IPARK MALL <span className="text-blue-600">Smart Estimator</span></h1>
                 </div>
                 <div className="flex items-center gap-4 text-sm font-medium text-slate-500">
                     <button onClick={() => setIsAiOpen(!isAiOpen)}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all ${isAiOpen ? 'bg-blue-600 text-white' : 'bg-blue-50 text-blue-600 hover:bg-blue-100'}`}
+                        className={`flex items-center gap-2 px-5 py-2.5 rounded-full transition-all font-semibold ${isAiOpen ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'}`}
                     >
                         <Zap size={18} fill={isAiOpen ? 'currentColor' : 'none'} />
                         AI 튜터 {isAiOpen ? 'OFF' : 'ON'}
