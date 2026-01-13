@@ -331,26 +331,54 @@ export default function Page() {
         const prompt = `당신은 건설 공사 견적 분석 전문가입니다. 아래 데이터를 바탕으로 상세 분석 리포트를 작성해주세요. [데이터] 공사명: ${projectInfo.name}, 유형: ${constructionTypes[constructionType].name}, 구역: ${zones[zone].name}, 총액: ${totals.total.toLocaleString()}원. 포함공종: ${scopeSummary}. [요청] 1.적정성 평가 2.비용분석 3.리스크 4.절감제안.`;
 
         try {
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
             });
             const data = await response.json();
-            setAiModalContent(prev => ({ ...prev, content: data.candidates?.[0]?.content?.parts?.[0]?.text || "분석 실패" }));
-        } catch (e) { setAiModalContent(prev => ({ ...prev, content: "오류 발생" })); } finally { setIsAiProcessing(false); }
+            setAiModalContent(prev => ({ ...prev, content: data.candidates?.[0]?.content?.parts?.[0]?.text || "분석 실패: API 키를 확인해주세요." }));
+        } catch (e) { setAiModalContent(prev => ({ ...prev, content: "오류 발생: 네트워크 상태를 확인해주세요." })); } finally { setIsAiProcessing(false); }
     };
 
     const generateSafetyChecklist = async () => {
         if (!checkApiKey()) return;
         setAiModalOpen(true); setIsAiProcessing(true);
         setAiModalContent({ title: 'AI 맞춤형 안전 점검 리스트', content: '', type: 'checklist' });
+
         const activeScopeLabels = detailedScopes.filter(s => s.active).map(s => s.label).join(', ');
-        const prompt = `건설 안전 관리자로서 안전 점검 리스트 작성. 공종: ${activeScopeLabels}. 현장: 아이파크몰 ${zones[zone].name}. 1.공종별 항목 2.공통주의사항 3.체크리스트형식`;
+
+        // Construct Multimodal Prompt
+        const parts: any[] = [
+            {
+                text: `건설 안전 관리자로서 안전 점검 리스트 작성. 
+            [조건]
+            1. 공종: ${activeScopeLabels}
+            2. 현장: 아이파크몰 ${zones[zone].name}
+            3. 첨부된 현장 사진이 있다면 위험 요소를 식별해서 반영
+            4. **매우 간결하게 핵심만 요약** (길게 쓰지 말 것)
+            5. **체크리스트 형식(글머리 기호)만 사용**`
+            }
+        ];
+
+        // Add photos if available
+        if (photos.length > 0) {
+            photos.forEach(p => {
+                const base64Data = p.src.split(',')[1]; // Remove data URL prefix
+                if (base64Data) {
+                    parts.push({
+                        inlineData: {
+                            mimeType: "image/jpeg", // Assuming JPEG/PNG from common inputs
+                            data: base64Data
+                        }
+                    });
+                }
+            });
+        }
 
         try {
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                body: JSON.stringify({ contents: [{ parts: parts }] })
             });
             const data = await response.json();
             setAiModalContent(prev => ({ ...prev, content: data.candidates?.[0]?.content?.parts?.[0]?.text || "생성 실패" }));
@@ -361,11 +389,37 @@ export default function Page() {
         if (!userInput.trim() || !checkApiKey()) return;
         const newHistory = [...chatHistory, { role: 'user', text: userInput }];
         setChatHistory(newHistory); setUserInput(''); setIsGenerating(true);
-        // ... Simplified chat logic for brevity ...
-        setTimeout(() => {
-            setChatHistory(prev => [...prev, { role: 'ai', text: "AI 튜터 응답 (실제 API 연동 필요)" }]);
+
+        const context = `
+            [프로젝트 정보]
+            공사명: ${projectInfo.name}
+            작성자: ${projectInfo.author}
+            기간: ${projectInfo.startDate} ~ ${projectInfo.endDate}
+            구역: ${zones[zone].name}
+            유형: ${constructionTypes[constructionType].name}
+            등급: ${grades[grade].name}
+            면적: ${area}m2
+            총 견적액: ${totals.total.toLocaleString()}원
+        `;
+
+        try {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{
+                        parts: [{ text: `당신은 아이파크몰 리뉴얼 공사 전문 AI 튜터입니다. 아래 공사 정보를 바탕으로 사용자의 질문에 친절하고 전문적으로 답변하세요.\n\n${context}\n\n사용자 질문: ${userInput}` }]
+                    }]
+                })
+            });
+            const data = await response.json();
+            const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || "죄송합니다. 답변을 생성하지 못했습니다.";
+
+            setChatHistory(prev => [...prev, { role: 'ai', text: aiResponse }]);
+        } catch (e) {
+            setChatHistory(prev => [...prev, { role: 'ai', text: "오류가 발생했습니다. 다시 시도해주세요." }]);
+        } finally {
             setIsGenerating(false);
-        }, 1000);
+        }
     };
 
     // --- RENDER ---
@@ -528,20 +582,26 @@ export default function Page() {
                             <div className="flex flex-col gap-4">
                                 <div className="flex items-center gap-3">
                                     <div className="relative flex-1">
-                                        <input type="number" value={area} onChange={e => setArea(Number(e.target.value))} className="w-full bg-white border border-slate-200 rounded-2xl px-4 py-3 font-black text-xl text-center text-slate-800 outline-none shadow-sm focus:border-blue-500 transition-all" />
+                                        <input type="number" step="0.01" value={area} onChange={e => setArea(Number(e.target.value))} className="w-full bg-white border border-slate-200 rounded-2xl px-4 py-3 font-black text-xl text-center text-slate-800 outline-none shadow-sm focus:border-blue-500 transition-all" />
                                         <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 pointer-events-none">m²</span>
                                     </div>
                                     <span className="text-slate-300">⇄</span>
                                     <div className="relative flex-1">
-                                        <input type="number" value={Math.round(area * 0.3025 * 100) / 100} onChange={(e) => {
-                                            const val = Number(e.target.value);
-                                            if (!isNaN(val)) setArea(Number((val / 0.3025).toFixed(1)));
-                                        }} className="w-full bg-white border border-slate-200 rounded-2xl px-4 py-3 font-black text-xl text-center text-slate-800 outline-none shadow-sm focus:border-blue-500 transition-all" />
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            value={Number((area * 0.3025).toFixed(2))}
+                                            onChange={(e) => {
+                                                const val = Number(e.target.value);
+                                                if (!isNaN(val)) setArea(Number((val / 0.3025).toFixed(2)));
+                                            }}
+                                            className="w-full bg-white border border-slate-200 rounded-2xl px-4 py-3 font-black text-xl text-center text-slate-800 outline-none shadow-sm focus:border-blue-500 transition-all"
+                                        />
                                         <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 pointer-events-none">평</span>
                                     </div>
                                 </div>
                                 <div className="flex-1 px-1">
-                                    <input type="range" min="10" max="1000" value={area} onChange={e => setArea(Number(e.target.value))} className="w-full h-3 bg-slate-200 rounded-full appearance-none cursor-pointer accent-blue-600 no-print" />
+                                    <input type="range" min="10" max="16530" value={area} onChange={e => setArea(Number(e.target.value))} className="w-full h-3 bg-slate-200 rounded-full appearance-none cursor-pointer accent-blue-600 no-print" />
                                 </div>
                             </div>
                         </div>
