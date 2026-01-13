@@ -321,7 +321,6 @@ export default function Page() {
     };
 
     const generateAiReport = async () => {
-        if (!checkApiKey()) return;
         setAiModalOpen(true); setIsAiProcessing(true);
         setAiModalContent({ title: 'AI 견적 정밀 분석 리포트', content: '', type: 'report' });
 
@@ -331,17 +330,18 @@ export default function Page() {
         const prompt = `당신은 건설 공사 견적 분석 전문가입니다. 아래 데이터를 바탕으로 상세 분석 리포트를 작성해주세요. [데이터] 공사명: ${projectInfo.name}, 유형: ${constructionTypes[constructionType].name}, 구역: ${zones[zone].name}, 총액: ${totals.total.toLocaleString()}원. 포함공종: ${scopeSummary}. [요청] 1.적정성 평가 2.비용분석 3.리스크 4.절감제안.`;
 
         try {
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+            const response = await fetch('/api/generate', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                body: JSON.stringify({ prompt })
             });
             const data = await response.json();
-            setAiModalContent(prev => ({ ...prev, content: data.candidates?.[0]?.content?.parts?.[0]?.text || "분석 실패: API 키를 확인해주세요." }));
-        } catch (e) { setAiModalContent(prev => ({ ...prev, content: "오류 발생: 네트워크 상태를 확인해주세요." })); } finally { setIsAiProcessing(false); }
+            if (data.error) throw new Error(data.error);
+            setAiModalContent(prev => ({ ...prev, content: data.text || "분석 실패" }));
+        } catch (e) { setAiModalContent(prev => ({ ...prev, content: "AI 서버 연결 실패: 잠시 후 다시 시도해주세요." })); } finally { setIsAiProcessing(false); }
     };
 
     const generateSafetyChecklist = async () => {
-        if (!checkApiKey()) return;
+
         setAiModalOpen(true); setIsAiProcessing(true);
         setAiModalContent({ title: 'AI 맞춤형 안전 점검 리스트', content: '', type: 'checklist' });
 
@@ -376,17 +376,17 @@ export default function Page() {
         }
 
         try {
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+            const response = await fetch('/api/generate', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: parts }] })
+                body: JSON.stringify({ prompt, images: parts.length > 1 ? parts.slice(1).map((p: any) => p.inlineData.data) : [] })
             });
             const data = await response.json();
-            setAiModalContent(prev => ({ ...prev, content: data.candidates?.[0]?.content?.parts?.[0]?.text || "생성 실패" }));
+            setAiModalContent(prev => ({ ...prev, content: data.text || "생성 실패" }));
         } catch (e) { setAiModalContent(prev => ({ ...prev, content: "오류 발생" })); } finally { setIsAiProcessing(false); }
     };
 
     const handleSendMessage = async () => {
-        if (!userInput.trim() || !checkApiKey()) return;
+        if (!userInput.trim()) return;
         const newHistory = [...chatHistory, { role: 'user', text: userInput }];
         setChatHistory(newHistory); setUserInput(''); setIsGenerating(true);
 
@@ -403,16 +403,17 @@ export default function Page() {
         `;
 
         try {
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+            const prompt = `당신은 아이파크몰 리뉴얼 공사 전문 AI 튜터입니다. 아래 공사 정보를 바탕으로 사용자의 질문에 친절하고 전문적으로 답변하세요.\n\n${context}\n\n사용자 질문: ${userInput}`;
+
+            const response = await fetch('/api/generate', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    contents: [{
-                        parts: [{ text: `당신은 아이파크몰 리뉴얼 공사 전문 AI 튜터입니다. 아래 공사 정보를 바탕으로 사용자의 질문에 친절하고 전문적으로 답변하세요.\n\n${context}\n\n사용자 질문: ${userInput}` }]
-                    }]
+                    history: newHistory.map(h => ({ role: h.role === 'user' ? 'user' : 'model', text: h.text })),
+                    prompt: prompt
                 })
             });
             const data = await response.json();
-            const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || "죄송합니다. 답변을 생성하지 못했습니다.";
+            const aiResponse = data.text || "죄송합니다. 답변을 생성하지 못했습니다.";
 
             setChatHistory(prev => [...prev, { role: 'ai', text: aiResponse }]);
         } catch (e) {
@@ -424,38 +425,39 @@ export default function Page() {
 
     // --- RENDER ---
     return (
-        <div className="min-h-screen bg-slate-50 font-sans text-slate-900 pb-20 print:bg-white print:p-0">
+        <div className="min-h-screen bg-slate-50 font-sans text-slate-900 pb-12 md:pb-24 print:bg-white print:p-0">
 
             {/* Header */}
-            <header className="bg-white border-b border-slate-200 sticky top-0 z-30 flex justify-between items-center px-6 py-4 no-print shadow-sm">
-                <div className="flex items-center gap-3">
-                    <div className="bg-blue-600 p-2 rounded-xl"><Building2 className="text-white" size={20} /></div>
-                    <span className="text-xl font-black text-slate-800 tracking-tight">IPARK MALL <span className="text-blue-600">Smart Estimator</span></span>
+            <header className="bg-white border-b border-slate-200 sticky top-0 z-30 flex flex-wrap gap-2 justify-between items-center px-4 md:px-6 py-4 no-print shadow-sm font-medium">
+                <div className="flex items-center gap-2 md:gap-3">
+                    <div className="bg-blue-600 p-2 rounded-xl shrink-0"><Building2 className="text-white" size={18} /></div>
+                    <span className="text-sm md:text-xl font-black text-slate-800 tracking-tight leading-none">IPARK MALL <span className="text-blue-600 block md:inline">Smart Estimator</span></span>
                 </div>
-                <div className="flex items-center gap-3">
-                    <Link href="/dashboard" className="flex items-center gap-2 px-4 py-2 rounded-xl text-slate-500 font-bold hover:bg-slate-100 hover:text-blue-600 transition-colors text-xs">
-                        <LayoutDashboard size={16} /> 대시보드
+                <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0 scrollbar-hide">
+                    <Link href="/dashboard" className="flex items-center gap-1 md:gap-2 px-3 py-2 rounded-xl text-slate-500 font-bold hover:bg-slate-100 hover:text-blue-600 transition-colors text-xs whitespace-nowrap">
+                        <LayoutDashboard size={14} /> <span className="hidden md:inline">대시보드</span>
                     </Link>
-                    <button onClick={handleSave} disabled={isSaving} className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs transition-colors ${isSaving ? 'bg-blue-100 text-blue-400' : 'bg-blue-600 text-white hover:bg-blue-500 shadow-md hover:shadow-lg'}`}>
+                    <button onClick={handleSave} disabled={isSaving} className={`flex items-center gap-1 md:gap-2 px-3 py-2 rounded-xl font-bold text-xs transition-colors whitespace-nowrap ${isSaving ? 'bg-blue-100 text-blue-400' : 'bg-blue-600 text-white hover:bg-blue-500 shadow-md hover:shadow-lg'}`}>
                         {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-                        {isSaving ? '저장 중...' : '견적서 저장'}
+                        {isSaving ? '저장...' : '저장'}
                     </button>
-                    <div className="w-px h-6 bg-slate-200 mx-1"></div>
-                    <button onClick={() => setShowApiKeyModal(true)} className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs transition-colors ${apiKey ? 'bg-green-50 text-green-600' : 'bg-slate-100 text-slate-500'}`}>
-                        <Key size={14} /> {apiKey ? 'API KEY 설정됨' : 'API KEY 설정'}
-                    </button>
-                    <button onClick={() => setIsAiOpen(!isAiOpen)} className="bg-blue-50 hover:bg-blue-100 text-blue-600 px-4 py-2 rounded-full font-bold flex items-center gap-2 text-xs transition-colors">
-                        <Zap size={16} fill={isAiOpen ? 'currentColor' : 'none'} /> AI 튜터 {isAiOpen ? 'ON' : 'OFF'}
+                    {(
+                        <button onClick={() => setShowApiKeyModal(true)} className={`hidden md:flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs transition-colors ${apiKey ? 'bg-green-50 text-green-600' : 'bg-slate-100 text-slate-500'}`}>
+                            <Key size={14} /> API
+                        </button>
+                    )}
+                    <button onClick={() => setIsAiOpen(!isAiOpen)} className="bg-blue-50 hover:bg-blue-100 text-blue-600 px-3 py-2 rounded-full font-bold flex items-center gap-1 md:gap-2 text-xs transition-colors whitespace-nowrap">
+                        <Zap size={14} fill={isAiOpen ? 'currentColor' : 'none'} /> AI <span className="hidden md:inline">튜터</span>
                     </button>
                 </div>
             </header>
 
-            <main className="max-w-4xl mx-auto p-8 space-y-8">
+            <main className="max-w-4xl mx-auto p-4 md:p-8 space-y-6 md:space-y-8">
 
-                {/* 1. HERO SECTION (High Fidelity Design) */}
+                {/* 1. HERO SECTION */}
                 <motion.div
                     initial={{ opacity: 0, scale: 0.99 }} animate={{ opacity: 1, scale: 1 }}
-                    className="bg-[#111827] text-white rounded-[2.5rem] p-10 relative overflow-hidden shadow-2xl print:bg-white print:text-black print:border-b-2 print:border-black"
+                    className="bg-[#111827] text-white rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-10 relative overflow-hidden shadow-2xl print:bg-white print:text-black print:border-b-2 print:border-black"
                 >
                     {/* Background Decos */}
                     <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/10 blur-[120px] rounded-full -mr-32 -mt-32 pointer-events-none no-print"></div>
@@ -470,26 +472,26 @@ export default function Page() {
                         </button>
                     </div>
 
-                    <h2 className="text-4xl md:text-5xl font-black mb-6 tracking-tight leading-tight">{projectInfo.name || '공사명 미입력'}</h2>
+                    <h2 className="text-2xl md:text-5xl font-black mb-4 md:mb-6 tracking-tight leading-tight">{projectInfo.name || '공사명 미입력'}</h2>
 
-                    <div className="flex flex-wrap gap-x-8 gap-y-3 text-base text-blue-100/90 mb-10 font-bold">
-                        <span className="flex items-center gap-2 bg-blue-900/40 px-3 py-1.5 rounded-lg border border-blue-500/20"><Building2 size={18} /> {zones[zone].name}</span>
+                    <div className="flex flex-wrap gap-2 md:gap-x-8 md:gap-y-3 text-xs md:text-base text-blue-100/90 mb-6 md:mb-10 font-bold">
+                        <span className="flex items-center gap-1 md:gap-2 bg-blue-900/40 px-2 py-1 md:px-3 md:py-1.5 rounded-lg border border-blue-500/20"><Building2 size={14} className="md:w-[18px]" /> {zones[zone].name}</span>
                         <span className="flex items-center gap-2 bg-blue-900/40 px-3 py-1.5 rounded-lg border border-blue-500/20"><Settings size={18} /> {constructionTypes[constructionType].name}</span>
                         <span className="flex items-center gap-2 bg-blue-900/40 px-3 py-1.5 rounded-lg border border-blue-500/20"><HardHat size={18} /> {grades[grade].name}</span>
                         <span className="flex items-center gap-2 bg-blue-900/40 px-3 py-1.5 rounded-lg border border-blue-500/20"><Calculator size={18} /> {area}m² ({Math.round(area * 0.3025)}평)</span>
                     </div>
 
-                    <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 border-t border-white/10 pt-8 relative z-10 no-print">
+                    <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 md:gap-8 border-t border-white/10 pt-6 md:pt-8 relative z-10 no-print">
                         <div>
-                            <p className="text-slate-400 text-xs font-bold mb-2 uppercase tracking-wide">총 예상 공사비 (VAT 별도)</p>
-                            <div className="text-5xl md:text-6xl font-black tracking-tighter mb-2">₩ {totals.total.toLocaleString()}</div>
-                            <div className="flex gap-4 text-xs font-medium text-slate-400">
+                            <p className="text-slate-400 text-[10px] md:text-xs font-bold mb-1 md:mb-2 uppercase tracking-wide">총 예상 공사비 (VAT 별도)</p>
+                            <div className="text-4xl md:text-6xl font-black tracking-tighter mb-2">₩ {totals.total.toLocaleString()}</div>
+                            <div className="flex flex-wrap gap-3 md:gap-4 text-[10px] md:text-xs font-medium text-slate-400">
                                 <span>순공사비: {totals.subtotal.toLocaleString()}</span>
                                 <span className="text-blue-400">일반관리비: {totals.overhead.toLocaleString()}</span>
                             </div>
                         </div>
-                        <button onClick={generateAiReport} className="bg-blue-600 hover:bg-blue-500 text-white font-extrabold px-8 py-4 rounded-2xl flex items-center gap-3 shadow-xl hover:shadow-2xl hover:scale-105 transition-all text-sm">
-                            <FileSearch size={20} /> AI 견적 정밀 분석
+                        <button onClick={generateAiReport} className="bg-blue-600 hover:bg-blue-500 text-white font-extrabold px-6 py-3 md:px-8 md:py-4 rounded-xl md:rounded-2xl flex items-center justify-center gap-2 md:gap-3 shadow-xl hover:shadow-2xl hover:scale-105 transition-all text-xs md:text-sm w-full md:w-auto">
+                            <FileSearch size={16} className="md:w-5" /> AI 견적 정밀 분석
                         </button>
                     </div>
 
@@ -500,8 +502,8 @@ export default function Page() {
                 </motion.div>
 
                 {/* 2. Basic Info Card */}
-                <div className="bg-white rounded-[2rem] p-8 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-slate-100 print:shadow-none print:border print:border-slate-300">
-                    <h3 className="text-lg font-extrabold flex items-center gap-3 mb-8 text-slate-800 border-l-4 border-blue-600 pl-3">
+                <div className="bg-white rounded-[2rem] p-6 md:p-8 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-slate-100 print:shadow-none print:border print:border-slate-300">
+                    <h3 className="text-lg font-extrabold flex items-center gap-3 mb-6 md:mb-8 text-slate-800 border-l-4 border-blue-600 pl-3">
                         <FileText className="text-blue-600" size={24} /> 공사 개요 및 기본 설정
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
