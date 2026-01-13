@@ -333,46 +333,47 @@ export default function Page() {
 
                 {/* 1. HERO CARD (Blue) */}
                 <motion.div
-                    initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                    className="bg-[#111827] text-white rounded-3xl p-8 relative overflow-hidden shadow-xl print:bg-white print:text-black print:border-b-2 print:border-black"
+                    initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }}
+                    className="bg-[#1e3a8a] text-white rounded-[2rem] p-10 relative overflow-hidden shadow-2xl print:bg-white print:text-black print:border-b-2 print:border-black"
                 >
                     {/* Background Decos */}
-                    <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/20 blur-[100px] rounded-full -mr-20 -mt-20 pointer-events-none no-print"></div>
+                    <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-white/10 blur-[120px] rounded-full -mr-32 -mt-32 pointer-events-none no-print shadow-inner"></div>
 
                     {/* Top Row: Tag & Date & PDF Button */}
-                    <div className="flex justify-between items-start mb-6 relative z-10">
+                    <div className="flex justify-between items-start mb-8 relative z-10">
                         <div className="flex items-center gap-3">
-                            <span className="bg-blue-600 text-white text-[10px] font-bold px-2 py-1 rounded print:bg-black">PROJECT ESTIMATE</span>
-                            <span className="text-slate-400 text-xs font-medium print:text-black">{new Date().toLocaleDateString()} 기준</span>
+                            <span className="bg-white/20 backdrop-blur-md text-white border border-white/30 text-[11px] font-extrabold px-3 py-1.5 rounded-full tracking-wider shadow-sm print:bg-black">PROJECT ESTIMATE</span>
+                            <span className="text-blue-100/80 text-sm font-semibold print:text-black tracking-tight">{new Date().toLocaleDateString()} 기준</span>
                         </div>
-                        <button onClick={handleExportPDF} className="border border-white/20 hover:bg-white/10 px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-2 transition-colors no-print">
-                            <Download size={14} /> PDF 저장 / 인쇄
+                        <button onClick={handleExportPDF} className="bg-white/10 hover:bg-white/20 border border-white/30 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all shadow-sm backdrop-blur-sm no-print">
+                            <Download size={16} /> PDF 저장/인쇄
                         </button>
                     </div>
 
                     {/* Title */}
-                    <h2 className="text-3xl font-bold mb-6 print:text-black">{projectInfo.name}</h2>
+                    <h2 className="text-4xl md:text-5xl font-black mb-6 print:text-black tracking-tight leading-tight drop-shadow-sm">{projectInfo.name}</h2>
 
                     {/* Info Grid */}
-                    <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-300 mb-8 font-medium print:text-black">
-                        <span className="flex items-center gap-1.5"><Building2 size={16} /> {zones[zone].name}</span>
-                        <span className="flex items-center gap-1.5"><Settings size={16} /> {constructionTypes[constructionType].name}</span>
-                        <span className="flex items-center gap-1.5"><HardHat size={16} /> {grades[grade].name}</span>
-                        <span className="flex items-center gap-1.5"><Calculator size={16} /> {area}m² ({Math.round(area * 0.3025)}평)</span>
+                    <div className="flex flex-wrap gap-x-8 gap-y-3 text-base text-blue-100 mb-10 font-bold print:text-black">
+                        <span className="flex items-center gap-2 bg-blue-900/40 px-3 py-1 rounded-lg border border-blue-400/30"><Building2 size={18} /> {zones[zone].name}</span>
+                        <span className="flex items-center gap-2 bg-blue-900/40 px-3 py-1 rounded-lg border border-blue-400/30"><Settings size={18} /> {constructionTypes[constructionType].name}</span>
+                        <span className="flex items-center gap-2 bg-blue-900/40 px-3 py-1 rounded-lg border border-blue-400/30"><HardHat size={18} /> {grades[grade].name}</span>
+                        <span className="flex items-center gap-2 bg-blue-900/40 px-3 py-1 rounded-lg border border-blue-400/30"><Calculator size={18} /> {area}m² ({Math.round(area * 0.3025)}평)</span>
                     </div>
 
                     {/* Price Section */}
-                    <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-t border-white/10 pt-6 no-print">
+                    <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 border-t border-white/20 pt-8 no-print">
                         <div className="text-center md:text-left mx-auto md:mx-0">
-                            <p className="text-slate-400 text-sm mb-1">총 예상 공사비 (VAT 별도)</p>
-                            <div className="text-5xl font-black tracking-tighter">₩ {totals.total.toLocaleString()}</div>
-                            <div className="flex gap-3 text-xs text-slate-400 mt-2 justify-center md:justify-start">
-                                <span>순공사비: {totals.subtotal.toLocaleString()}</span>
-                                <span className="text-blue-400 font-bold">일반관리비(10%): {totals.overhead.toLocaleString()}</span>
+                            <p className="text-blue-200 text-sm font-bold mb-2 tracking-wide uppercase">총 예상 공사비 (VAT 별도)</p>
+                            <div className="text-6xl md:text-7xl font-black tracking-tighter drop-shadow-md">₩ {totals.total.toLocaleString()}</div>
+                            <div className="flex gap-4 text-sm text-blue-200 mt-3 justify-center md:justify-start font-medium bg-blue-900/30 inline-block px-4 py-2 rounded-xl">
+                                <span>순공사비: <span className="text-white font-bold">{totals.subtotal.toLocaleString()}</span></span>
+                                <span className="w-px h-4 bg-white/20"></span>
+                                <span>일반관리비(10%): <span className="text-amber-300 font-bold">{totals.overhead.toLocaleString()}</span></span>
                             </div>
                         </div>
-                        <button onClick={() => setIsAiOpen(true)} className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-6 py-3 rounded-xl flex items-center gap-2 shadow-lg shadow-blue-600/30 transition-all mx-auto md:mx-0">
-                            <Zap size={18} /> AI 견적 정밀 분석
+                        <button onClick={() => setIsAiOpen(true)} className="bg-white text-blue-700 font-extrabold px-8 py-4 rounded-2xl flex items-center gap-3 shadow-xl hover:shadow-2xl hover:scale-105 hover:bg-blue-50 transition-all mx-auto md:mx-0 text-base">
+                            <Zap size={20} fill="currentColor" /> AI 견적 정밀 분석
                         </button>
                     </div>
 
@@ -386,72 +387,87 @@ export default function Page() {
                 </motion.div>
 
                 {/* 2. Basic Settings */}
-                <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 print:border print:border-slate-300">
-                    <h3 className="text-lg font-bold flex items-center gap-2 mb-6"><FileText className="text-blue-600 print:text-black" size={20} /> 공사 개요 및 기본 설정</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-2">
-                            <label className="text-xs font-bold text-slate-500">공사명</label>
-                            <input type="text" value={projectInfo.name} onChange={e => setProjectInfo({ ...projectInfo, name: e.target.value })} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 outline-none focus:ring-2 focus:ring-blue-500 font-bold text-slate-800" />
+                <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100 print:border print:border-slate-300">
+                    <h3 className="text-xl font-extrabold flex items-center gap-3 mb-8 text-slate-800"><span className="bg-blue-100 text-blue-600 p-2 rounded-xl"><FileText size={24} /></span> 공사 개요 및 기본 설정</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="space-y-3">
+                            <label className="text-sm font-extrabold text-slate-400 uppercase tracking-wide ml-1">공사명</label>
+                            <input type="text" value={projectInfo.name} onChange={e => setProjectInfo({ ...projectInfo, name: e.target.value })} className="w-full max-w-md bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3.5 outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-500 font-bold text-slate-800 transition-all text-lg shadow-sm" />
                         </div>
-                        <div className="space-y-2">
-                            <label className="text-xs font-bold text-slate-500">작성자</label>
-                            <div className="relative">
-                                <User className="absolute left-3 top-2.5 text-slate-400" size={16} />
-                                <input type="text" value={projectInfo.author} onChange={e => setProjectInfo({ ...projectInfo, author: e.target.value })} className="w-full pl-10 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 outline-none focus:ring-2 focus:ring-blue-500" />
+                        <div className="space-y-3">
+                            <label className="text-sm font-extrabold text-slate-400 uppercase tracking-wide ml-1">작성자</label>
+                            <div className="relative max-w-xs">
+                                <User className="absolute left-4 top-3.5 text-slate-400" size={18} />
+                                <input type="text" value={projectInfo.author} onChange={e => setProjectInfo({ ...projectInfo, author: e.target.value })} className="w-full pl-12 bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3.5 outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-500 font-medium transition-all shadow-sm" />
                             </div>
                         </div>
-                        <div className="space-y-2">
-                            <label className="text-xs font-bold text-slate-500">공사 기간</label>
-                            <div className="flex gap-2">
-                                <input type="date" value={projectInfo.startDate} onChange={e => setProjectInfo({ ...projectInfo, startDate: e.target.value })} className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm outline-none" />
-                                <span className="text-slate-400 self-center">~</span>
-                                <input type="date" value={projectInfo.endDate} onChange={e => setProjectInfo({ ...projectInfo, endDate: e.target.value })} className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm outline-none" />
+                        <div className="space-y-3">
+                            <label className="text-sm font-extrabold text-slate-400 uppercase tracking-wide ml-1">공사 기간</label>
+                            <div className="flex gap-3 max-w-sm">
+                                <input type="date" value={projectInfo.startDate} onChange={e => setProjectInfo({ ...projectInfo, startDate: e.target.value })} className="flex-1 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm outline-none font-bold text-slate-600 shadow-sm" />
+                                <span className="text-slate-300 self-center font-bold">~</span>
+                                <input type="date" value={projectInfo.endDate} onChange={e => setProjectInfo({ ...projectInfo, endDate: e.target.value })} className="flex-1 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm outline-none font-bold text-slate-600 shadow-sm" />
                             </div>
                         </div>
-                        <div className="space-y-2">
-                            <label className="text-xs font-bold text-slate-500">특이사항 (전체)</label>
-                            <input type="text" value={projectInfo.remarks} onChange={e => setProjectInfo({ ...projectInfo, remarks: e.target.value })} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 outline-none" placeholder="예: 야간 공사 필수" />
+                        <div className="space-y-3">
+                            <label className="text-sm font-extrabold text-slate-400 uppercase tracking-wide ml-1">특이사항</label>
+                            <input type="text" value={projectInfo.remarks} onChange={e => setProjectInfo({ ...projectInfo, remarks: e.target.value })} className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3.5 outline-none focus:ring-4 focus:ring-blue-100 font-medium shadow-sm transition-all" placeholder="내용을 입력하세요" />
                         </div>
                     </div>
                 </div>
 
                 {/* 3. Criteria Settings */}
-                <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 print:break-inside-avoid print:border print:border-slate-300">
-                    <h3 className="text-lg font-bold flex items-center gap-2 mb-6"><Settings className="text-blue-600 print:text-black" size={20} /> 견적 산출 기준 설정</h3>
+                <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100 print:break-inside-avoid print:border print:border-slate-300">
+                    <h3 className="text-xl font-extrabold flex items-center gap-3 mb-8 text-slate-800"><span className="bg-blue-100 text-blue-600 p-2 rounded-xl"><Settings size={24} /></span> 견적 산출 기준 설정</h3>
 
                     {/* Construction Type Cards */}
-                    <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100 mb-6">
-                        <label className="text-xs font-bold text-blue-800 uppercase mb-3 block flex items-center gap-1.5"><Briefcase size={14} /> 공사 유형 (Construction Type)</label>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div className="mb-8">
+                        <label className="text-sm font-extrabold text-slate-400 uppercase tracking-wide mb-4 block ml-1">공사 유형 (Construction Type)</label>
+                        <div className="flex flex-col md:flex-row gap-4">
                             {Object.entries(constructionTypes).map(([key, val]) => (
                                 <button key={key} onClick={() => setConstructionType(key as ConstructionType)}
-                                    className={`text-left p-4 rounded-lg border transition-all ${constructionType === key ? 'bg-blue-600 text-white border-blue-600 shadow-md' : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300'}`}>
-                                    <div className="font-bold text-sm mb-1">{val.name}</div>
-                                    <div className={`text-[10px] ${constructionType === key ? 'text-blue-100' : 'text-slate-400'}`}>{val.desc}</div>
+                                    className={`flex-1 text-left p-5 rounded-2xl border-2 transition-all relative overflow-hidden group ${constructionType === key ? 'bg-blue-600 border-blue-600 text-white shadow-lg scale-[1.02] ring-4 ring-blue-100' : 'bg-white border-slate-100 text-slate-500 hover:border-blue-200 hover:bg-slate-50'}`}>
+                                    <div className="relative z-10">
+                                        <div className="font-black text-lg mb-1">{val.name}</div>
+                                        <div className={`text-xs font-medium ${constructionType === key ? 'text-blue-100' : 'text-slate-400'}`}>{val.desc}</div>
+                                    </div>
+                                    {constructionType === key && <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -mr-10 -mt-10 blur-xl"></div>}
                                 </button>
                             ))}
                         </div>
                     </div>
 
                     {/* Selectors */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label className="text-xs font-bold text-slate-500 mb-2 block">리뉴얼 구역</label>
-                            <select value={zone} onChange={e => setZone(e.target.value as ZoneType)} className="w-full border border-slate-200 rounded-lg px-3 py-2.5 bg-white outline-none focus:ring-2 focus:ring-blue-500">
-                                {Object.entries(zones).map(([key, val]) => <option key={key} value={key}>{val.name}</option>)}
-                            </select>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8 items-end">
+                        <div className="lg:col-span-3">
+                            <label className="text-sm font-extrabold text-slate-400 uppercase tracking-wide mb-3 block ml-1">리뉴얼 구역</label>
+                            <div className="relative">
+                                <select value={zone} onChange={e => setZone(e.target.value as ZoneType)} className="w-full border-2 border-slate-100 rounded-2xl px-5 py-3.5 bg-slate-50 font-bold text-slate-700 outline-none focus:border-blue-500 transition-all appearance-none cursor-pointer hover:bg-slate-100">
+                                    {Object.entries(zones).map(([key, val]) => <option key={key} value={key}>{val.name}</option>)}
+                                </select>
+                                <div className="absolute right-4 top-4 text-slate-400 pointer-events-none">▼</div>
+                            </div>
                         </div>
-                        <div>
-                            <label className="text-xs font-bold text-slate-500 mb-2 block">마감 등급</label>
-                            <select value={grade} onChange={e => setGrade(e.target.value as GradeType)} className="w-full border border-slate-200 rounded-lg px-3 py-2.5 bg-white outline-none focus:ring-2 focus:ring-blue-500">
-                                {Object.entries(grades).map(([key, val]) => <option key={key} value={key}>{val.name}</option>)}
-                            </select>
+                        <div className="lg:col-span-3">
+                            <label className="text-sm font-extrabold text-slate-400 uppercase tracking-wide mb-3 block ml-1">마감 등급</label>
+                            <div className="relative">
+                                <select value={grade} onChange={e => setGrade(e.target.value as GradeType)} className="w-full border-2 border-slate-100 rounded-2xl px-5 py-3.5 bg-slate-50 font-bold text-slate-700 outline-none focus:border-blue-500 transition-all appearance-none cursor-pointer hover:bg-slate-100">
+                                    {Object.entries(grades).map(([key, val]) => <option key={key} value={key}>{val.name}</option>)}
+                                </select>
+                                <div className="absolute right-4 top-4 text-slate-400 pointer-events-none">▼</div>
+                            </div>
                         </div>
-                        <div className="md:col-span-2">
-                            <label className="text-xs font-bold text-slate-500 mb-2 block">전용 면적 (m²)</label>
-                            <div className="flex items-center gap-4">
-                                <input type="number" value={area} onChange={e => setArea(Number(e.target.value))} className="w-24 border border-slate-200 rounded-lg px-3 py-2 font-bold text-center" />
-                                <input type="range" min="10" max="1000" value={area} onChange={e => setArea(Number(e.target.value))} className="flex-1 accent-blue-600 no-print" />
+                        <div className="lg:col-span-6 bg-slate-50 p-5 rounded-2xl border border-slate-100">
+                            <label className="text-sm font-extrabold text-slate-400 uppercase tracking-wide mb-3 block">전용 면적 (m²)</label>
+                            <div className="flex items-center gap-6">
+                                <input type="number" value={area} onChange={e => setArea(Number(e.target.value))} className="w-32 bg-white border-2 border-slate-200 rounded-xl px-4 py-3 font-black text-xl text-center text-blue-600 focus:border-blue-500 outline-none shadow-sm" />
+                                <div className="flex-1">
+                                    <input type="range" min="10" max="1000" value={area} onChange={e => setArea(Number(e.target.value))} className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600 no-print" />
+                                    <div className="flex justify-between text-xs text-slate-400 font-bold mt-2 px-1">
+                                        <span>10m²</span>
+                                        <span>1,000m²</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
