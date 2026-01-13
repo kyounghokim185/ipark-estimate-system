@@ -26,9 +26,14 @@ import {
     AlertTriangle,
     CheckCircle,
     Loader2,
-    Key
+    Key,
+    ChevronDown,
+    ChevronUp,
+    Save,
+    LayoutDashboard
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Link from 'next/link';
 
 // --- Types ---
 type ZoneType = 'fashion' | 'living' | 'fnb' | 'center';
@@ -71,17 +76,17 @@ export default function Page() {
     const [constructionType, setConstructionType] = useState<ConstructionType>('general');
 
     const [detailedScopes, setDetailedScopes] = useState([
-        { id: 'licensing', label: '인허가', active: false, area: 100, unitPrice: 0, remarks: '대관 업무 및 필증', ratio: 0.1 },
-        { id: 'demolition', label: '가설/철거', active: true, area: 100, unitPrice: 80000, remarks: '', isFixedRate: true },
-        { id: 'floor', label: '바닥 공사', active: true, area: 100, unitPrice: 0, remarks: '', ratio: 0.15 },
-        { id: 'wall', label: '벽체 공사', active: true, area: 100, unitPrice: 0, remarks: '', ratio: 0.25 },
-        { id: 'ceiling', label: '천장 공사', active: true, area: 100, unitPrice: 0, remarks: '', ratio: 0.20 },
-        { id: 'electrical', label: '전기/조명', active: true, area: 100, unitPrice: 0, remarks: '', ratio: 0.15 },
-        { id: 'hvac', label: '공조 설비', active: true, area: 100, unitPrice: 0, remarks: '', ratio: 0.12 },
-        { id: 'firefighting', label: '소방/안전', active: true, area: 100, unitPrice: 0, remarks: '', ratio: 0.08 },
-        { id: 'furniture', label: '집기/가구', active: false, area: 100, unitPrice: 0, remarks: '별도 발주 예정', ratio: 0.25 },
-        { id: 'signage', label: '사인 공사', active: false, area: 100, unitPrice: 0, remarks: '', ratio: 0.05 },
-        { id: 'etc', label: '기타 공사', active: false, area: 100, unitPrice: 0, remarks: '', ratio: 0.05 },
+        { id: 'licensing', label: '인허가', active: false, area: 100, unitPrice: 0, remarks: '대관 업무 및 필증', ratio: 0.1, details: [] as any[], isExpanded: false },
+        { id: 'demolition', label: '가설/철거', active: true, area: 100, unitPrice: 80000, remarks: '', isFixedRate: true, details: [] as any[], isExpanded: false },
+        { id: 'floor', label: '바닥 공사', active: true, area: 100, unitPrice: 0, remarks: '', ratio: 0.15, details: [] as any[], isExpanded: false },
+        { id: 'wall', label: '벽체 공사', active: true, area: 100, unitPrice: 0, remarks: '', ratio: 0.25, details: [] as any[], isExpanded: false },
+        { id: 'ceiling', label: '천장 공사', active: true, area: 100, unitPrice: 0, remarks: '', ratio: 0.20, details: [] as any[], isExpanded: false },
+        { id: 'electrical', label: '전기/조명', active: true, area: 100, unitPrice: 0, remarks: '', ratio: 0.15, details: [] as any[], isExpanded: false },
+        { id: 'hvac', label: '공조 설비', active: true, area: 100, unitPrice: 0, remarks: '', ratio: 0.12, details: [] as any[], isExpanded: false },
+        { id: 'firefighting', label: '소방/안전', active: true, area: 100, unitPrice: 0, remarks: '', ratio: 0.08, details: [] as any[], isExpanded: false },
+        { id: 'furniture', label: '집기/가구', active: false, area: 100, unitPrice: 0, remarks: '별도 발주 예정', ratio: 0.25, details: [] as any[], isExpanded: false },
+        { id: 'signage', label: '사인 공사', active: false, area: 100, unitPrice: 0, remarks: '', ratio: 0.05, details: [] as any[], isExpanded: false },
+        { id: 'etc', label: '기타 공사', active: false, area: 100, unitPrice: 0, remarks: '', ratio: 0.05, details: [] as any[], isExpanded: false },
     ]);
 
     const [photos, setPhotos] = useState<{ id: number, src: string, desc: string, date: string }[]>([]);
@@ -98,8 +103,12 @@ export default function Page() {
     const [aiModalContent, setAiModalContent] = useState({ title: '', content: '', type: '' });
     const [isAiProcessing, setIsAiProcessing] = useState(false);
 
-    const [apiKey, setApiKey] = useState('');
+    const [apiKey, setApiKey] = useState('AIzaSyBvNmw2OAtvIjWA1h3LFR0XJX4BcxAM7OQ');
     const [showApiKeyModal, setShowApiKeyModal] = useState(false);
+
+    // Persistence State
+    const [currentId, setCurrentId] = useState<string | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
 
     const chatEndRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -107,7 +116,69 @@ export default function Page() {
     useEffect(() => {
         const savedKey = localStorage.getItem('gemini_api_key');
         if (savedKey) setApiKey(savedKey);
+
+        // Load Estimate if ID is present
+        const searchParams = new URLSearchParams(window.location.search);
+        const id = searchParams.get('id');
+        if (id) {
+            const saved = localStorage.getItem('ipark_estimates');
+            if (saved) {
+                const estimates = JSON.parse(saved);
+                const target = estimates.find((e: any) => e.id === id);
+                if (target) {
+                    setCurrentId(target.id);
+                    setProjectInfo(target.projectInfo);
+                    setArea(target.data.area);
+                    setZone(target.data.zone);
+                    setGrade(target.data.grade);
+                    setConstructionType(target.data.constructionType);
+                    setDetailedScopes(target.data.detailedScopes);
+                    setPhotos(target.data.photos || []);
+                }
+            }
+        }
     }, []);
+
+    const handleSave = () => {
+        setIsSaving(true);
+        try {
+            const saved = localStorage.getItem('ipark_estimates');
+            let estimates = saved ? JSON.parse(saved) : [];
+
+            const newEstimate = {
+                id: currentId || crypto.randomUUID(),
+                lastModified: Date.now(),
+                projectInfo: projectInfo,
+                totals: totals,
+                data: {
+                    area,
+                    zone,
+                    grade,
+                    constructionType,
+                    detailedScopes,
+                    photos
+                }
+            };
+
+            if (currentId) {
+                estimates = estimates.map((e: any) => e.id === currentId ? newEstimate : e);
+            } else {
+                estimates.unshift(newEstimate); // Newest first
+                setCurrentId(newEstimate.id);
+                // Update URL without reload
+                const newUrl = `${window.location.pathname}?id=${newEstimate.id}`;
+                window.history.replaceState({ path: newUrl }, '', newUrl);
+            }
+
+            localStorage.setItem('ipark_estimates', JSON.stringify(estimates));
+            alert('견적서가 저장되었습니다.');
+        } catch (e) {
+            console.error(e);
+            alert('저장 중 오류가 발생했습니다.');
+        } finally {
+            setIsSaving(false);
+        }
+    };
 
     const saveApiKey = (key: string) => {
         setApiKey(key);
@@ -124,6 +195,8 @@ export default function Page() {
         const baseDemolition = 80000;
 
         setDetailedScopes(prev => prev.map(scope => {
+            // Keep existing manual edits if logic allows, but for now we follow the "Global Control" pattern
+            // To preserve details, we use ...scope
             let newScope = { ...scope };
             let multiplier = 1.0;
             let calculatedPrice = 0;
@@ -158,6 +231,44 @@ export default function Page() {
         setDetailedScopes(prev => prev.map(s => s.id === id ? { ...s, active: !s.active } : s));
     };
 
+    const toggleScopeExpanded = (id: string) => {
+        setDetailedScopes(prev => prev.map(s => s.id === id ? { ...s, isExpanded: !s.isExpanded } : s));
+    };
+
+    const addDetail = (scopeId: string) => {
+        setDetailedScopes(prev => prev.map(s => {
+            if (s.id === scopeId) {
+                return {
+                    ...s,
+                    details: [...(s.details || []), { id: Date.now(), desc: '', area: 0, unitPrice: 0, remarks: '' }],
+                    isExpanded: true // Auto expand when adding
+                };
+            }
+            return s;
+        }));
+    };
+
+    const updateDetail = (scopeId: string, detailId: number, field: string, value: any) => {
+        setDetailedScopes(prev => prev.map(s => {
+            if (s.id === scopeId) {
+                return {
+                    ...s,
+                    details: s.details.map(d => d.id === detailId ? { ...d, [field]: value } : d)
+                };
+            }
+            return s;
+        }));
+    };
+
+    const removeDetail = (scopeId: string, detailId: number) => {
+        setDetailedScopes(prev => prev.map(s => {
+            if (s.id === scopeId) {
+                return { ...s, details: s.details.filter(d => d.id !== detailId) };
+            }
+            return s;
+        }));
+    };
+
     const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
@@ -183,7 +294,19 @@ export default function Page() {
             return true;
         });
         const activeItems = visibleScopes.filter(s => s.active);
-        activeItems.forEach(s => { subtotal += (s.area * s.unitPrice); });
+
+        activeItems.forEach(s => {
+            // Main scope cost
+            subtotal += (s.area * s.unitPrice);
+
+            // Detailed items cost
+            if (s.details && s.details.length > 0) {
+                s.details.forEach((d: any) => {
+                    subtotal += (d.area * d.unitPrice);
+                });
+            }
+        });
+
         const overhead = subtotal * 0.10;
         return { subtotal, overhead, total: subtotal + overhead };
     };
@@ -256,6 +379,14 @@ export default function Page() {
                     <span className="text-xl font-black text-slate-800 tracking-tight">IPARK MALL <span className="text-blue-600">Smart Estimator</span></span>
                 </div>
                 <div className="flex items-center gap-3">
+                    <Link href="/dashboard" className="flex items-center gap-2 px-4 py-2 rounded-xl text-slate-500 font-bold hover:bg-slate-100 hover:text-blue-600 transition-colors text-xs">
+                        <LayoutDashboard size={16} /> 대시보드
+                    </Link>
+                    <button onClick={handleSave} disabled={isSaving} className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs transition-colors ${isSaving ? 'bg-blue-100 text-blue-400' : 'bg-blue-600 text-white hover:bg-blue-500 shadow-md hover:shadow-lg'}`}>
+                        {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                        {isSaving ? '저장 중...' : '견적서 저장'}
+                    </button>
+                    <div className="w-px h-6 bg-slate-200 mx-1"></div>
                     <button onClick={() => setShowApiKeyModal(true)} className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs transition-colors ${apiKey ? 'bg-green-50 text-green-600' : 'bg-slate-100 text-slate-500'}`}>
                         <Key size={14} /> {apiKey ? 'API KEY 설정됨' : 'API KEY 설정'}
                     </button>
@@ -393,13 +524,23 @@ export default function Page() {
                         </div>
 
                         <div className="bg-slate-50 rounded-[1.5rem] p-6 border border-slate-100 flex flex-col justify-center">
-                            <label className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-4 block">전용 면적 (m²)</label>
-                            <div className="flex items-center gap-6">
-                                <div className="relative">
-                                    <input type="number" value={area} onChange={e => setArea(Number(e.target.value))} className="w-36 bg-white border border-slate-200 rounded-2xl px-4 py-3 font-black text-2xl text-center text-slate-800 outline-none shadow-sm focus:border-blue-500 transition-all" />
-                                    <span className="absolute right-4 top-5 text-xs font-bold text-slate-400 pointer-events-none">m²</span>
+                            <label className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-4 block">전용 면적</label>
+                            <div className="flex flex-col gap-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="relative flex-1">
+                                        <input type="number" value={area} onChange={e => setArea(Number(e.target.value))} className="w-full bg-white border border-slate-200 rounded-2xl px-4 py-3 font-black text-xl text-center text-slate-800 outline-none shadow-sm focus:border-blue-500 transition-all" />
+                                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 pointer-events-none">m²</span>
+                                    </div>
+                                    <span className="text-slate-300">⇄</span>
+                                    <div className="relative flex-1">
+                                        <input type="number" value={Math.round(area * 0.3025 * 100) / 100} onChange={(e) => {
+                                            const val = Number(e.target.value);
+                                            if (!isNaN(val)) setArea(Number((val / 0.3025).toFixed(1)));
+                                        }} className="w-full bg-white border border-slate-200 rounded-2xl px-4 py-3 font-black text-xl text-center text-slate-800 outline-none shadow-sm focus:border-blue-500 transition-all" />
+                                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 pointer-events-none">평</span>
+                                    </div>
                                 </div>
-                                <div className="flex-1">
+                                <div className="flex-1 px-1">
                                     <input type="range" min="10" max="1000" value={area} onChange={e => setArea(Number(e.target.value))} className="w-full h-3 bg-slate-200 rounded-full appearance-none cursor-pointer accent-blue-600 no-print" />
                                 </div>
                             </div>
@@ -435,21 +576,102 @@ export default function Page() {
                                     if (constructionType === 'restoration' && ['furniture', 'signage'].includes(scope.id)) return null;
                                     if (constructionType !== 'permit' && scope.id === 'licensing') return null;
                                     return (
-                                        <tr key={scope.id} className={`transition-colors hover:bg-slate-50/50 ${scope.active ? '' : 'opacity-40 grayscale'}`}>
-                                            <td className="py-4 pl-4 no-print">
-                                                <button onClick={() => toggleScopeActive(scope.id)} className={`text-blue-600 hover:scale-110 transition-transform ${!scope.active && 'text-slate-300'}`}>
-                                                    {scope.active ? <CheckSquare size={20} /> : <Square size={20} />}
-                                                </button>
-                                            </td>
-                                            <td className="py-4 font-bold text-slate-700 text-base">
-                                                {scope.label}
-                                                {scope.id === 'licensing' && <span className="ml-2 bg-red-100 text-red-600 text-[10px] px-2 py-0.5 rounded-full font-bold">필수</span>}
-                                            </td>
-                                            <td className="py-4 text-right font-medium text-slate-600">{scope.area}</td>
-                                            <td className="py-4 text-right font-medium text-slate-600 tracking-tight">{scope.unitPrice.toLocaleString()}</td>
-                                            <td className="py-4 text-right font-black text-slate-800 tracking-tight text-base">{(scope.area * scope.unitPrice).toLocaleString()}</td>
-                                            <td className="py-4 pl-6"><input type="text" value={scope.remarks} onChange={e => handleScopeChange(scope.id, 'remarks', e.target.value)} className="w-full bg-transparent border-b border-transparent focus:border-blue-300 outline-none text-slate-600 placeholder:text-slate-300 transition-colors" placeholder="-" /></td>
-                                        </tr>
+                                        <React.Fragment key={scope.id}>
+                                            <tr className={`transition-colors hover:bg-slate-50/50 ${scope.active ? '' : 'opacity-40 grayscale'}`}>
+                                                <td className="py-4 pl-4 no-print align-middle">
+                                                    <div className="flex items-center gap-2">
+                                                        <button onClick={() => toggleScopeActive(scope.id)} className={`text-blue-600 hover:scale-110 transition-transform ${!scope.active && 'text-slate-300'}`}>
+                                                            {scope.active ? <CheckSquare size={20} /> : <Square size={20} />}
+                                                        </button>
+                                                        {scope.active && (
+                                                            <button onClick={() => toggleScopeExpanded(scope.id)} className="text-slate-400 hover:text-slate-600 transition-colors p-1">
+                                                                {scope.isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                                <td className="py-4 font-bold text-slate-700 text-base align-middle">
+                                                    {scope.label}
+                                                    {scope.id === 'licensing' && <span className="ml-2 bg-red-100 text-red-600 text-[10px] px-2 py-0.5 rounded-full font-bold">필수</span>}
+                                                </td>
+                                                <td className="py-4 text-right align-middle">
+                                                    <input
+                                                        type="number"
+                                                        value={scope.area}
+                                                        onChange={e => handleScopeChange(scope.id, 'area', Number(e.target.value))}
+                                                        className="w-20 text-right font-medium text-slate-600 bg-transparent border-b border-transparent focus:border-blue-300 outline-none transition-colors"
+                                                    />
+                                                </td>
+                                                <td className="py-4 text-right align-middle">
+                                                    <input
+                                                        type="number"
+                                                        value={scope.unitPrice}
+                                                        onChange={e => handleScopeChange(scope.id, 'unitPrice', Number(e.target.value))} // Note: This might be overwritten by auto-calc if logic isn't blocked, but user requested editing.
+                                                        className="w-24 text-right font-medium text-slate-600 tracking-tight bg-transparent border-b border-transparent focus:border-blue-300 outline-none transition-colors"
+                                                    />
+                                                </td>
+                                                <td className="py-4 text-right font-black text-slate-800 tracking-tight text-base align-middle">
+                                                    {(
+                                                        (scope.area * scope.unitPrice) +
+                                                        (scope.details ? scope.details.reduce((acc: number, cur: any) => acc + (cur.area * cur.unitPrice), 0) : 0)
+                                                    ).toLocaleString()}
+                                                </td>
+                                                <td className="py-4 pl-6 align-middle"><input type="text" value={scope.remarks} onChange={e => handleScopeChange(scope.id, 'remarks', e.target.value)} className="w-full bg-transparent border-b border-transparent focus:border-blue-300 outline-none text-slate-600 placeholder:text-slate-300 transition-colors" placeholder="-" /></td>
+                                            </tr>
+                                            {/* Detailed Items Section */}
+                                            {scope.active && scope.isExpanded && (
+                                                <tr className="bg-slate-50/50">
+                                                    <td colSpan={6} className="p-0">
+                                                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="px-12 py-6 border-b border-slate-100">
+                                                            <div className="flex items-center justify-between mb-4">
+                                                                <h5 className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2">
+                                                                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div> 상세 항목 구성
+                                                                </h5>
+                                                                <button onClick={() => addDetail(scope.id)} className="text-xs bg-white border border-slate-200 hover:border-blue-300 text-slate-600 hover:text-blue-600 px-3 py-1.5 rounded-lg flex items-center gap-1 transition-all shadow-sm">
+                                                                    <Plus size={12} /> 항목 추가
+                                                                </button>
+                                                            </div>
+
+                                                            {scope.details && scope.details.length > 0 ? (
+                                                                <div className="space-y-2">
+                                                                    {scope.details.map((detail: any) => (
+                                                                        <div key={detail.id} className="grid grid-cols-12 gap-4 items-center bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
+                                                                            <div className="col-span-3">
+                                                                                <input type="text" placeholder="항목명 (예: 타일)" value={detail.desc} onChange={e => updateDetail(scope.id, detail.id, 'desc', e.target.value)} className="w-full text-sm font-bold text-slate-700 bg-transparent outline-none placeholder:text-slate-300" />
+                                                                            </div>
+                                                                            <div className="col-span-2 flex items-center gap-2">
+                                                                                <span className="text-[10px] text-slate-400 font-bold w-8">면적</span>
+                                                                                <input type="number" value={detail.area} onChange={e => updateDetail(scope.id, detail.id, 'area', Number(e.target.value))} className="w-full text-sm text-right font-medium text-slate-600 bg-slate-50 rounded-lg px-2 py-1 outline-none focus:ring-1 focus:ring-blue-200" />
+                                                                            </div>
+                                                                            <div className="col-span-2 flex items-center gap-2">
+                                                                                <span className="text-[10px] text-slate-400 font-bold w-8">단가</span>
+                                                                                <input type="number" value={detail.unitPrice} onChange={e => updateDetail(scope.id, detail.id, 'unitPrice', Number(e.target.value))} className="w-full text-sm text-right font-medium text-slate-600 bg-slate-50 rounded-lg px-2 py-1 outline-none focus:ring-1 focus:ring-blue-200" />
+                                                                            </div>
+                                                                            <div className="col-span-2 text-right font-bold text-slate-800 text-sm">
+                                                                                {(detail.area * detail.unitPrice).toLocaleString()}원
+                                                                            </div>
+                                                                            <div className="col-span-2">
+                                                                                <input type="text" placeholder="비고" value={detail.remarks} onChange={e => updateDetail(scope.id, detail.id, 'remarks', e.target.value)} className="w-full text-xs text-slate-500 bg-transparent outline-none placeholder:text-slate-300" />
+                                                                            </div>
+                                                                            <div className="col-span-1 text-right">
+                                                                                <button onClick={() => removeDetail(scope.id, detail.id)} className="text-slate-300 hover:text-red-500 transition-colors p-1"><Trash2 size={14} /></button>
+                                                                            </div>
+                                                                        </div>
+                                                                    ))}
+                                                                    <div className="text-right text-xs font-bold text-slate-500 mt-2 p-2">
+                                                                        상세 합계: <span className="text-blue-600 text-sm ml-1">{scope.details.reduce((acc: number, cur: any) => acc + (cur.area * cur.unitPrice), 0).toLocaleString()}원</span>
+                                                                    </div>
+                                                                </div>
+                                                            ) : (
+                                                                <div className="text-center py-4 text-xs text-slate-400 bg-slate-100/50 rounded-xl border border-dashed border-slate-200">
+                                                                    추가된 상세 항목이 없습니다.
+                                                                </div>
+                                                            )}
+                                                        </motion.div>
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </React.Fragment>
                                     )
                                 })}
                             </tbody>
