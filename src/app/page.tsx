@@ -103,7 +103,7 @@ export default function Page() {
     const [aiModalContent, setAiModalContent] = useState({ title: '', content: '', type: '' });
     const [isAiProcessing, setIsAiProcessing] = useState(false);
 
-    const [apiKey, setApiKey] = useState('AIzaSyBvNmw2OAtvIjWA1h3LFR0XJX4BcxAM7OQ');
+    const [apiKey, setApiKey] = useState(process.env.NEXT_PUBLIC_GEMINI_API_KEY || '');
     const [showApiKeyModal, setShowApiKeyModal] = useState(false);
 
     // Persistence State
