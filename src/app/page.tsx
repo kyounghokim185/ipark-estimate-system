@@ -298,7 +298,7 @@ export default function Page() {
     const calculateTotal = () => {
         let subtotal = 0;
         const visibleScopes = detailedScopes.filter(s => {
-            if (constructionType === 'restoration' && ['furniture', 'signage'].includes(s.id)) return false;
+            if (constructionType === 'restoration' && ['furniture', 'signage', 'facade'].includes(s.id)) return false;
             if (constructionType !== 'permit' && s.id === 'licensing') return false;
             return true;
         });
