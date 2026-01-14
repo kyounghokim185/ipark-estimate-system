@@ -73,9 +73,9 @@ export default function Page() {
     };
 
     const constructionTypes: Record<ConstructionType, { name: string; desc: string }> = {
-        general: { name: '일반 공사', desc: '표준 리뉴얼 (단가 80% 적용)' },
-        restoration: { name: '원상 복구 공사', desc: '철거 중심 (철거 150%, 마감 10%)' },
-        permit: { name: '인허가 공사', desc: '관공서 대관 업무 포함 (단가 100%)' }
+        general: { name: '일반 공사', desc: '전기/설비/소방 90%, 그 외 100%' },
+        restoration: { name: '원상 복구 공사', desc: '철거 150%, 마감/MEP 10%' },
+        permit: { name: '인허가 공사', desc: '전기/설비/소방 120%, 그 외 100%' }
     };
 
     // --- State Management ---
@@ -194,6 +194,30 @@ export default function Page() {
             return { ...scope, area: pyeongArea };
         }));
     }, [area]);
+
+    const getGradeMultiplier = (g: GradeType, p: number) => {
+        if (g === 'standard') {
+            if (p < 100) return 1.2;
+            if (p < 500) return 1.1;
+            if (p < 1000) return 1.0;
+            return 0.9;
+        }
+        if (g === 'basic') {
+            if (p < 100) return 1.2;
+            if (p < 500) return 1.0;
+            if (p < 1000) return 0.9;
+            return 0.8;
+        }
+        if (g === 'premium') {
+            if (p < 100) return 1.3;
+            if (p < 500) return 1.2;
+            if (p < 1000) return 1.1;
+            return 1.0;
+        }
+        return 1.0;
+    };
+
+    const currentGradeMultiplier = getGradeMultiplier(grade, area * 0.3025);
 
     useEffect(() => {
         const pyeong = area * 0.3025;
@@ -373,7 +397,7 @@ export default function Page() {
                     <div className="flex flex-wrap gap-2 md:gap-x-8 md:gap-y-3 text-xs md:text-base text-blue-100/90 mb-6 md:mb-10 font-bold">
                         <span className="flex items-center gap-1 md:gap-2 bg-blue-900/40 px-2 py-1 md:px-3 md:py-1.5 rounded-lg border border-blue-500/20"><Building2 size={14} className="md:w-[18px]" /> {zones[zone].name}</span>
                         <span className="flex items-center gap-2 bg-blue-900/40 px-3 py-1.5 rounded-lg border border-blue-500/20"><Settings size={18} /> {constructionTypes[constructionType].name}</span>
-                        <span className="flex items-center gap-2 bg-blue-900/40 px-3 py-1.5 rounded-lg border border-blue-500/20"><HardHat size={18} /> {grades[grade].name}</span>
+                        <span className="flex items-center gap-2 bg-blue-900/40 px-3 py-1.5 rounded-lg border border-blue-500/20"><HardHat size={18} /> {grades[grade].name} <span className="text-yellow-400 text-[10px] ml-1">({Math.round(currentGradeMultiplier * 100)}%)</span></span>
                         <span className="flex items-center gap-2 bg-blue-900/40 px-3 py-1.5 rounded-lg border border-blue-500/20"><Calculator size={18} /> {Math.round(area * 0.3025)}평 ({area}m²)</span>
                     </div>
 
