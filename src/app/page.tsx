@@ -306,17 +306,17 @@ export default function Page() {
 
         activeItems.forEach(s => {
             // Main scope cost
-            subtotal += (s.area * s.unitPrice);
+            subtotal += Math.round(s.area * s.unitPrice);
 
             // Detailed items cost
             if (s.details && s.details.length > 0) {
                 s.details.forEach((d: any) => {
-                    subtotal += (d.area * d.unitPrice);
+                    subtotal += Math.round(d.area * d.unitPrice);
                 });
             }
         });
 
-        const overhead = subtotal * 0.10;
+        const overhead = Math.round(subtotal * 0.10);
         return { subtotal, overhead, total: subtotal + overhead };
     };
 
@@ -569,7 +569,7 @@ export default function Page() {
                                                     />
                                                 </td>
                                                 <td className="py-4 text-right font-black text-slate-800 tracking-tight text-base align-middle">
-                                                    {(
+                                                    {Math.round(
                                                         (scope.area * scope.unitPrice) +
                                                         (scope.details ? scope.details.reduce((acc: number, cur: any) => acc + (cur.area * cur.unitPrice), 0) : 0)
                                                     ).toLocaleString()}
