@@ -222,39 +222,49 @@ export default function Page() {
     useEffect(() => {
         const pyeong = area * 0.3025;
 
-        const getMultiplier = (g: GradeType, p: number) => {
-            if (g === 'standard') {
-                if (p < 100) return 1.2;
-                if (p < 500) return 1.1;
-                if (p < 1000) return 1.0;
-                return 0.9;
+
+
+        // Construction Type Multipliers based on Image
+        const CONSTRUCTION_MULTIPLIERS: Record<ConstructionType, Record<string, number>> = {
+            general: {
+                electrical: 0.9, hvac: 0.9, firefighting: 0.9,
+                default: 1.0
+            },
+            restoration: {
+                temporary: 1.5, demolition: 1.5,
+                floor: 0.1, wall: 0.1, ceiling: 0.1, electrical: 0.1, hvac: 0.1, firefighting: 0.1,
+                facade: 0, furniture: 0, signage: 0,
+                default: 1.0
+            },
+            permit: {
+                electrical: 1.2, hvac: 1.2, firefighting: 1.2,
+                default: 1.0
             }
-            if (g === 'basic') {
-                if (p < 100) return 1.2;
-                if (p < 500) return 1.0;
-                if (p < 1000) return 0.9;
-                return 0.8;
-            }
-            if (g === 'premium') {
-                if (p < 100) return 1.3;
-                if (p < 500) return 1.2;
-                if (p < 1000) return 1.1;
-                return 1.0;
-            }
-            return 1.0;
         };
 
-        const multiplier = getMultiplier(grade, pyeong);
+        const gradeMultiplier = getGradeMultiplier(grade, pyeong);
 
         setDetailedScopes(prev => prev.map(scope => {
             let newScope = { ...scope };
             // Set Unit Price from Look-up Table * Tiered Multiplier
             const basePrice = UNIT_PRICES[zone][scope.id] || 0;
 
-            newScope.unitPrice = Math.round(basePrice * multiplier);
+            // 2. Construction Type Multiplier
+            const typeMultipliers = CONSTRUCTION_MULTIPLIERS[constructionType];
+
+            // Check specific scope multiplier -> check default -> fallback 1.0
+            let cMultiplier = 1.0;
+            if (scope.id in typeMultipliers) {
+                cMultiplier = typeMultipliers[scope.id];
+            } else {
+                cMultiplier = typeMultipliers.default || 1.0;
+            }
+
+            // 3. Apply Multipliers (Base * Construction * Grade/Area)
+            newScope.unitPrice = Math.round(basePrice * cMultiplier * gradeMultiplier);
             return newScope;
         }));
-    }, [zone, grade, area]);
+    }, [zone, grade, area, constructionType]);
 
     const handleScopeChange = (id: string, field: string, value: any) => {
         setDetailedScopes(prev => prev.map(s => s.id === id ? { ...s, [field]: value } : s));
