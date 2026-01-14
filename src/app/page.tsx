@@ -6,27 +6,21 @@ import {
     Settings,
     Download,
     RefreshCcw,
-    Zap,
-    Building2,
-    HardHat,
-    Lightbulb,
-    X,
-    Send,
     CheckSquare,
     Square,
     Camera,
+    Building2,
+    HardHat,
+    Lightbulb,
     Calendar,
     User,
     FileText,
     Plus,
     Trash2,
     Briefcase,
-    FileSearch,
-    ClipboardCheck,
     AlertTriangle,
     CheckCircle,
     Loader2,
-    Key,
     ChevronDown,
     ChevronUp,
     Save,
@@ -36,17 +30,40 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 
 // --- Types ---
-type ZoneType = 'fashion' | 'living' | 'fnb' | 'center';
+type ZoneType = 'fashion' | 'living' | 'fnb' | 'back';
 type GradeType = 'basic' | 'standard' | 'premium';
 type ConstructionType = 'general' | 'restoration' | 'permit';
 
 export default function Page() {
     // --- Constant Data (Ipark Mall Specific) ---
     const zones: Record<ZoneType, { name: string; baseRate: number; desc: string }> = {
-        fashion: { name: '패션파크', baseRate: 1800000, desc: '의류 매장 중심, 조명 및 디스플레이 강조' },
-        living: { name: '리빙파크', baseRate: 1600000, desc: '가구 및 생활용품, 조닝별 연출 중요' },
-        fnb: { name: 'F&B/푸드코트', baseRate: 2500000, desc: '주방 설비, 덕트, 방수 공사 필수' },
-        center: { name: '더 센터/로비', baseRate: 2200000, desc: '공용부 연출, 고성능 자재 적용' }
+        fashion: { name: '패션파크', baseRate: 0, desc: '의류 매장 중심' },
+        living: { name: '리빙파크', baseRate: 0, desc: '가구 및 생활용품' },
+        fnb: { name: 'F&B', baseRate: 0, desc: '주방 설비 및 배기' },
+        back: { name: '후방', baseRate: 0, desc: '직원 공간 및 창고' }
+    };
+
+    const UNIT_PRICES: Record<ZoneType, Record<string, number>> = {
+        fashion: {
+            licensing: 200000000, design: 240000, temporary: 240000, demolition: 240000,
+            floor: 600000, wall: 1000000, ceiling: 1000000, facade: 240000,
+            furniture: 600000, signage: 240000, electrical: 1000000, hvac: 600000, firefighting: 600000
+        },
+        living: {
+            licensing: 200000000, design: 240000, temporary: 240000, demolition: 240000,
+            floor: 600000, wall: 1000000, ceiling: 1000000, facade: 240000,
+            furniture: 600000, signage: 240000, electrical: 1000000, hvac: 600000, firefighting: 600000
+        },
+        fnb: {
+            licensing: 200000000, design: 300000, temporary: 240000, demolition: 300000,
+            floor: 800000, wall: 1200000, ceiling: 1000000, facade: 300000,
+            furniture: 900000, signage: 240000, electrical: 1200000, hvac: 1000000, firefighting: 1000000
+        },
+        back: {
+            licensing: 200000000, design: 160000, temporary: 240000, demolition: 160000,
+            floor: 350000, wall: 500000, ceiling: 500000, facade: 160000,
+            furniture: 350000, signage: 160000, electrical: 800000, hvac: 500000, firefighting: 500000
+        }
     };
 
     const grades: Record<GradeType, { name: string; multiplier: number; desc: string }> = {
@@ -76,48 +93,32 @@ export default function Page() {
     const [constructionType, setConstructionType] = useState<ConstructionType>('general');
 
     const [detailedScopes, setDetailedScopes] = useState([
-        { id: 'licensing', label: '인허가', active: false, area: 100, unitPrice: 0, remarks: '대관 업무 및 필증', ratio: 0.1, details: [] as any[], isExpanded: false },
-        { id: 'demolition', label: '가설/철거', active: true, area: 100, unitPrice: 80000, remarks: '', isFixedRate: true, details: [] as any[], isExpanded: false },
-        { id: 'floor', label: '바닥 공사', active: true, area: 100, unitPrice: 0, remarks: '', ratio: 0.15, details: [] as any[], isExpanded: false },
-        { id: 'wall', label: '벽체 공사', active: true, area: 100, unitPrice: 0, remarks: '', ratio: 0.25, details: [] as any[], isExpanded: false },
-        { id: 'ceiling', label: '천장 공사', active: true, area: 100, unitPrice: 0, remarks: '', ratio: 0.20, details: [] as any[], isExpanded: false },
-        { id: 'electrical', label: '전기/조명', active: true, area: 100, unitPrice: 0, remarks: '', ratio: 0.15, details: [] as any[], isExpanded: false },
-        { id: 'hvac', label: '공조 설비', active: true, area: 100, unitPrice: 0, remarks: '', ratio: 0.12, details: [] as any[], isExpanded: false },
-        { id: 'firefighting', label: '소방/안전', active: true, area: 100, unitPrice: 0, remarks: '', ratio: 0.08, details: [] as any[], isExpanded: false },
-        { id: 'furniture', label: '집기/가구', active: false, area: 100, unitPrice: 0, remarks: '별도 발주 예정', ratio: 0.25, details: [] as any[], isExpanded: false },
-        { id: 'signage', label: '사인 공사', active: false, area: 100, unitPrice: 0, remarks: '', ratio: 0.05, details: [] as any[], isExpanded: false },
-        { id: 'etc', label: '기타 공사', active: false, area: 100, unitPrice: 0, remarks: '', ratio: 0.05, details: [] as any[], isExpanded: false },
+        { id: 'licensing', label: '인허가', active: true, area: 1, unitPrice: 0, remarks: '', isFixedRate: true, details: [] as any[], isExpanded: false },
+        { id: 'design', label: '설계', active: true, area: 100, unitPrice: 0, remarks: '', isFixedRate: false, details: [] as any[], isExpanded: false },
+        { id: 'temporary', label: '가설', active: true, area: 100, unitPrice: 0, remarks: '', isFixedRate: false, details: [] as any[], isExpanded: false },
+        { id: 'demolition', label: '철거', active: true, area: 100, unitPrice: 0, remarks: '', isFixedRate: false, details: [] as any[], isExpanded: false },
+        { id: 'floor', label: '바닥', active: true, area: 100, unitPrice: 0, remarks: '', isFixedRate: false, details: [] as any[], isExpanded: false },
+        { id: 'wall', label: '벽체', active: true, area: 100, unitPrice: 0, remarks: '', isFixedRate: false, details: [] as any[], isExpanded: false },
+        { id: 'ceiling', label: '천장/조명', active: true, area: 100, unitPrice: 0, remarks: '', isFixedRate: false, details: [] as any[], isExpanded: false },
+        { id: 'facade', label: '파사드', active: true, area: 100, unitPrice: 0, remarks: '', isFixedRate: false, details: [] as any[], isExpanded: false },
+        { id: 'furniture', label: '집기', active: true, area: 100, unitPrice: 0, remarks: '', isFixedRate: false, details: [] as any[], isExpanded: false },
+        { id: 'signage', label: '사인', active: true, area: 100, unitPrice: 0, remarks: '', isFixedRate: false, details: [] as any[], isExpanded: false },
+        { id: 'electrical', label: '전기/통신', active: true, area: 100, unitPrice: 0, remarks: '', isFixedRate: false, details: [] as any[], isExpanded: false },
+        { id: 'hvac', label: '설비/위생', active: true, area: 100, unitPrice: 0, remarks: '', isFixedRate: false, details: [] as any[], isExpanded: false },
+        { id: 'firefighting', label: '소방/제연', active: true, area: 100, unitPrice: 0, remarks: '', isFixedRate: false, details: [] as any[], isExpanded: false },
     ]);
 
     const [photos, setPhotos] = useState<{ id: number, src: string, desc: string, date: string }[]>([]);
-
-    // AI & UI State
-    const [isAiOpen, setIsAiOpen] = useState(false);
-    const [chatHistory, setChatHistory] = useState([
-        { role: 'ai', text: '안녕하세요! 아이파크몰 리뉴얼 AI 튜터입니다. 공사 유형별 단가 조정이나 항목에 대해 궁금한 점을 물어보세요.' }
-    ]);
-    const [userInput, setUserInput] = useState('');
-    const [isGenerating, setIsGenerating] = useState(false);
-
-    const [aiModalOpen, setAiModalOpen] = useState(false);
-    const [aiModalContent, setAiModalContent] = useState({ title: '', content: '', type: '' });
-    const [isAiProcessing, setIsAiProcessing] = useState(false);
-
-    const [apiKey, setApiKey] = useState(process.env.NEXT_PUBLIC_GEMINI_API_KEY || '');
-    const [showApiKeyModal, setShowApiKeyModal] = useState(false);
 
     // Persistence State
     const [currentId, setCurrentId] = useState<string | null>(null);
     const [isSaving, setIsSaving] = useState(false);
 
-    const chatEndRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
-        const savedKey = localStorage.getItem('gemini_api_key');
-        if (savedKey) setApiKey(savedKey);
-
         // Load Estimate if ID is present
+
         const searchParams = new URLSearchParams(window.location.search);
         const id = searchParams.get('id');
         if (id) {
@@ -180,48 +181,56 @@ export default function Page() {
         }
     };
 
-    const saveApiKey = (key: string) => {
-        setApiKey(key);
-        localStorage.setItem('gemini_api_key', key);
-        setShowApiKeyModal(false);
-    };
+
 
     useEffect(() => {
-        setDetailedScopes(prev => prev.map(scope => ({ ...scope, area: area })));
+        // Convert GLOBAL Area (m2) to Pyeong for the scopes
+        const pyeongArea = area * 0.3025;
+        // setDetailedScopes(prev => prev.map(scope => ({ ...scope, area: pyeongArea })));
+        setDetailedScopes(prev => prev.map(scope => {
+            if (scope.isFixedRate) {
+                return scope; // Fixed rate items have independent area (usually 1 or manually set)
+            }
+            return { ...scope, area: pyeongArea };
+        }));
     }, [area]);
 
     useEffect(() => {
-        const baseRate = zones[zone].baseRate * grades[grade].multiplier;
-        const baseDemolition = 80000;
+        const pyeong = area * 0.3025;
+
+        const getMultiplier = (g: GradeType, p: number) => {
+            if (g === 'standard') {
+                if (p < 100) return 1.2;
+                if (p < 500) return 1.1;
+                if (p < 1000) return 1.0;
+                return 0.9;
+            }
+            if (g === 'basic') {
+                if (p < 100) return 1.2;
+                if (p < 500) return 1.0;
+                if (p < 1000) return 0.9;
+                return 0.8;
+            }
+            if (g === 'premium') {
+                if (p < 100) return 1.3;
+                if (p < 500) return 1.2;
+                if (p < 1000) return 1.1;
+                return 1.0;
+            }
+            return 1.0;
+        };
+
+        const multiplier = getMultiplier(grade, pyeong);
 
         setDetailedScopes(prev => prev.map(scope => {
-            // Keep existing manual edits if logic allows, but for now we follow the "Global Control" pattern
-            // To preserve details, we use ...scope
             let newScope = { ...scope };
-            let multiplier = 1.0;
-            let calculatedPrice = 0;
+            // Set Unit Price from Look-up Table * Tiered Multiplier
+            const basePrice = UNIT_PRICES[zone][scope.id] || 0;
 
-            if (constructionType === 'general') {
-                multiplier = 0.8;
-                if (scope.id === 'demolition') calculatedPrice = baseDemolition * multiplier;
-                else calculatedPrice = Math.round(baseRate * (scope.ratio || 0) * multiplier);
-                if (scope.id === 'licensing') newScope.active = false;
-            } else if (constructionType === 'restoration') {
-                if (scope.id === 'demolition') calculatedPrice = baseDemolition * 1.5;
-                else if (['floor', 'wall', 'ceiling'].includes(scope.id)) calculatedPrice = Math.round(baseRate * (scope.ratio || 0) * 0.1);
-                else calculatedPrice = Math.round(baseRate * (scope.ratio || 0) * 0.2);
-                if (['furniture', 'signage', 'licensing'].includes(scope.id)) newScope.active = false;
-            } else if (constructionType === 'permit') {
-                multiplier = 1.0;
-                if (scope.id === 'demolition') calculatedPrice = baseDemolition;
-                else calculatedPrice = Math.round(baseRate * (scope.ratio || 0));
-                if (scope.id === 'licensing') newScope.active = true;
-            }
-
-            newScope.unitPrice = calculatedPrice;
+            newScope.unitPrice = Math.round(basePrice * multiplier);
             return newScope;
         }));
-    }, [zone, grade, constructionType]);
+    }, [zone, grade, area]);
 
     const handleScopeChange = (id: string, field: string, value: any) => {
         setDetailedScopes(prev => prev.map(s => s.id === id ? { ...s, [field]: value } : s));
@@ -315,113 +324,7 @@ export default function Page() {
 
     const handlePrint = () => { window.print(); };
 
-    const checkApiKey = () => {
-        if (!apiKey) { setShowApiKeyModal(true); return false; }
-        return true;
-    };
-
-    const generateAiReport = async () => {
-        setAiModalOpen(true); setIsAiProcessing(true);
-        setAiModalContent({ title: 'AI 견적 정밀 분석 리포트', content: '', type: 'report' });
-
-        const activeScopes = detailedScopes.filter(s => s.active);
-        const scopeSummary = activeScopes.map(s => `${s.label}(${(s.area * s.unitPrice).toLocaleString()}원)`).join(', ');
-
-        const prompt = `당신은 건설 공사 견적 분석 전문가입니다. 아래 데이터를 바탕으로 상세 분석 리포트를 작성해주세요. [데이터] 공사명: ${projectInfo.name}, 유형: ${constructionTypes[constructionType].name}, 구역: ${zones[zone].name}, 총액: ${totals.total.toLocaleString()}원. 포함공종: ${scopeSummary}. [요청] 1.적정성 평가 2.비용분석 3.리스크 4.절감제안.`;
-
-        try {
-            const response = await fetch('/api/generate', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompt })
-            });
-            const data = await response.json();
-            if (data.error) throw new Error(data.error);
-            setAiModalContent(prev => ({ ...prev, content: data.text || "분석 실패" }));
-        } catch (e) { setAiModalContent(prev => ({ ...prev, content: "AI 서버 연결 실패: 잠시 후 다시 시도해주세요." })); } finally { setIsAiProcessing(false); }
-    };
-
-    const generateSafetyChecklist = async () => {
-
-        setAiModalOpen(true); setIsAiProcessing(true);
-        setAiModalContent({ title: 'AI 맞춤형 안전 점검 리스트', content: '', type: 'checklist' });
-
-        const activeScopeLabels = detailedScopes.filter(s => s.active).map(s => s.label).join(', ');
-
-        // Construct Multimodal Prompt
-        const parts: any[] = [
-            {
-                text: `건설 안전 관리자로서 안전 점검 리스트 작성. 
-            [조건]
-            1. 공종: ${activeScopeLabels}
-            2. 현장: 아이파크몰 ${zones[zone].name}
-            3. 첨부된 현장 사진이 있다면 위험 요소를 식별해서 반영
-            4. **매우 간결하게 핵심만 요약** (길게 쓰지 말 것)
-            5. **체크리스트 형식(글머리 기호)만 사용**`
-            }
-        ];
-
-        // Add photos if available
-        if (photos.length > 0) {
-            photos.forEach(p => {
-                const base64Data = p.src.split(',')[1]; // Remove data URL prefix
-                if (base64Data) {
-                    parts.push({
-                        inlineData: {
-                            mimeType: "image/jpeg", // Assuming JPEG/PNG from common inputs
-                            data: base64Data
-                        }
-                    });
-                }
-            });
-        }
-
-        try {
-            const response = await fetch('/api/generate', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompt, images: parts.length > 1 ? parts.slice(1).map((p: any) => p.inlineData.data) : [] })
-            });
-            const data = await response.json();
-            setAiModalContent(prev => ({ ...prev, content: data.text || "생성 실패" }));
-        } catch (e) { setAiModalContent(prev => ({ ...prev, content: "오류 발생" })); } finally { setIsAiProcessing(false); }
-    };
-
-    const handleSendMessage = async () => {
-        if (!userInput.trim()) return;
-        const newHistory = [...chatHistory, { role: 'user', text: userInput }];
-        setChatHistory(newHistory); setUserInput(''); setIsGenerating(true);
-
-        const context = `
-            [프로젝트 정보]
-            공사명: ${projectInfo.name}
-            작성자: ${projectInfo.author}
-            기간: ${projectInfo.startDate} ~ ${projectInfo.endDate}
-            구역: ${zones[zone].name}
-            유형: ${constructionTypes[constructionType].name}
-            등급: ${grades[grade].name}
-            면적: ${area}m2
-            총 견적액: ${totals.total.toLocaleString()}원
-        `;
-
-        try {
-            const prompt = `당신은 아이파크몰 리뉴얼 공사 전문 AI 튜터입니다. 아래 공사 정보를 바탕으로 사용자의 질문에 친절하고 전문적으로 답변하세요.\n\n${context}\n\n사용자 질문: ${userInput}`;
-
-            const response = await fetch('/api/generate', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    history: newHistory.map(h => ({ role: h.role === 'user' ? 'user' : 'model', text: h.text })),
-                    prompt: prompt
-                })
-            });
-            const data = await response.json();
-            const aiResponse = data.text || "죄송합니다. 답변을 생성하지 못했습니다.";
-
-            setChatHistory(prev => [...prev, { role: 'ai', text: aiResponse }]);
-        } catch (e) {
-            setChatHistory(prev => [...prev, { role: 'ai', text: "오류가 발생했습니다. 다시 시도해주세요." }]);
-        } finally {
-            setIsGenerating(false);
-        }
-    };
+    // --- RENDER ---
 
     // --- RENDER ---
     return (
@@ -441,14 +344,7 @@ export default function Page() {
                         {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
                         {isSaving ? '저장...' : '저장'}
                     </button>
-                    {(
-                        <button onClick={() => setShowApiKeyModal(true)} className={`hidden md:flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs transition-colors ${apiKey ? 'bg-green-50 text-green-600' : 'bg-slate-100 text-slate-500'}`}>
-                            <Key size={14} /> API
-                        </button>
-                    )}
-                    <button onClick={() => setIsAiOpen(!isAiOpen)} className="bg-blue-50 hover:bg-blue-100 text-blue-600 px-3 py-2 rounded-full font-bold flex items-center gap-1 md:gap-2 text-xs transition-colors whitespace-nowrap">
-                        <Zap size={14} fill={isAiOpen ? 'currentColor' : 'none'} /> AI <span className="hidden md:inline">튜터</span>
-                    </button>
+                    {/* AI Button Removed */}
                 </div>
             </header>
 
@@ -478,7 +374,7 @@ export default function Page() {
                         <span className="flex items-center gap-1 md:gap-2 bg-blue-900/40 px-2 py-1 md:px-3 md:py-1.5 rounded-lg border border-blue-500/20"><Building2 size={14} className="md:w-[18px]" /> {zones[zone].name}</span>
                         <span className="flex items-center gap-2 bg-blue-900/40 px-3 py-1.5 rounded-lg border border-blue-500/20"><Settings size={18} /> {constructionTypes[constructionType].name}</span>
                         <span className="flex items-center gap-2 bg-blue-900/40 px-3 py-1.5 rounded-lg border border-blue-500/20"><HardHat size={18} /> {grades[grade].name}</span>
-                        <span className="flex items-center gap-2 bg-blue-900/40 px-3 py-1.5 rounded-lg border border-blue-500/20"><Calculator size={18} /> {area}m² ({Math.round(area * 0.3025)}평)</span>
+                        <span className="flex items-center gap-2 bg-blue-900/40 px-3 py-1.5 rounded-lg border border-blue-500/20"><Calculator size={18} /> {Math.round(area * 0.3025)}평 ({area}m²)</span>
                     </div>
 
                     <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 md:gap-8 border-t border-white/10 pt-6 md:pt-8 relative z-10 no-print">
@@ -490,9 +386,7 @@ export default function Page() {
                                 <span className="text-blue-400">일반관리비: {totals.overhead.toLocaleString()}</span>
                             </div>
                         </div>
-                        <button onClick={generateAiReport} className="bg-blue-600 hover:bg-blue-500 text-white font-extrabold px-6 py-3 md:px-8 md:py-4 rounded-xl md:rounded-2xl flex items-center justify-center gap-2 md:gap-3 shadow-xl hover:shadow-2xl hover:scale-105 transition-all text-xs md:text-sm w-full md:w-auto">
-                            <FileSearch size={16} className="md:w-5" /> AI 견적 정밀 분석
-                        </button>
+                        {/* AI Button Removed */}
                     </div>
 
                     {/* Print Version Total */}
@@ -584,15 +478,10 @@ export default function Page() {
                             <div className="flex flex-col gap-4">
                                 <div className="flex items-center gap-3">
                                     <div className="relative flex-1">
-                                        <input type="number" step="0.01" value={area} onChange={e => setArea(Number(e.target.value))} className="w-full bg-white border border-slate-200 rounded-2xl px-4 py-3 font-black text-xl text-center text-slate-800 outline-none shadow-sm focus:border-blue-500 transition-all" />
-                                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 pointer-events-none">m²</span>
-                                    </div>
-                                    <span className="text-slate-300">⇄</span>
-                                    <div className="relative flex-1">
                                         <input
                                             type="number"
-                                            step="0.01"
-                                            value={Number((area * 0.3025).toFixed(2))}
+                                            step="0.1"
+                                            value={Number((area * 0.3025).toFixed(1))}
                                             onChange={(e) => {
                                                 const val = Number(e.target.value);
                                                 if (!isNaN(val)) setArea(Number((val / 0.3025).toFixed(2)));
@@ -600,6 +489,11 @@ export default function Page() {
                                             className="w-full bg-white border border-slate-200 rounded-2xl px-4 py-3 font-black text-xl text-center text-slate-800 outline-none shadow-sm focus:border-blue-500 transition-all"
                                         />
                                         <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 pointer-events-none">평</span>
+                                    </div>
+                                    <span className="text-slate-300">⇄</span>
+                                    <div className="relative flex-1">
+                                        <input type="number" step="0.01" value={area} onChange={e => setArea(Number(e.target.value))} className="w-full bg-white border border-slate-200 rounded-2xl px-4 py-3 font-black text-xl text-center text-slate-800 outline-none shadow-sm focus:border-blue-500 transition-all" />
+                                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 pointer-events-none">m²</span>
                                     </div>
                                 </div>
                                 <div className="flex-1 px-1">
@@ -616,9 +510,7 @@ export default function Page() {
                         <h3 className="text-lg font-extrabold flex items-center gap-3 text-slate-800 border-l-4 border-blue-600 pl-3">
                             <Calculator className="text-blue-600" size={24} /> 공종별 상세 내역
                         </h3>
-                        <button onClick={generateSafetyChecklist} className="bg-green-600 hover:bg-green-700 text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-2 transition-all shadow-sm no-print">
-                            <ClipboardCheck size={16} /> AI 안전 점검
-                        </button>
+                        {/* AI Button Removed */}
                     </div>
 
                     <div className="overflow-x-auto mb-8">
@@ -627,7 +519,7 @@ export default function Page() {
                                 <tr className="border-b border-slate-200">
                                     <th className="py-4 pl-4 w-12 no-print"></th>
                                     <th className="py-4 text-slate-400 font-bold uppercase text-xs">공종명</th>
-                                    <th className="py-4 text-right text-slate-400 font-bold uppercase text-xs">면적(m²)</th>
+                                    <th className="py-4 text-right text-slate-400 font-bold uppercase text-xs">면적(평)</th>
                                     <th className="py-4 text-right text-slate-400 font-bold uppercase text-xs">단가(원)</th>
                                     <th className="py-4 text-right text-slate-400 font-bold uppercase text-xs">금액(원)</th>
                                     <th className="py-4 pl-6 text-slate-400 font-bold uppercase text-xs">특이사항</th>
@@ -657,12 +549,16 @@ export default function Page() {
                                                     {scope.id === 'licensing' && <span className="ml-2 bg-red-100 text-red-600 text-[10px] px-2 py-0.5 rounded-full font-bold">필수</span>}
                                                 </td>
                                                 <td className="py-4 text-right align-middle">
-                                                    <input
-                                                        type="number"
-                                                        value={scope.area}
-                                                        onChange={e => handleScopeChange(scope.id, 'area', Number(e.target.value))}
-                                                        className="w-20 text-right font-medium text-slate-600 bg-transparent border-b border-transparent focus:border-blue-300 outline-none transition-colors"
-                                                    />
+                                                    <div className="relative inline-block">
+                                                        <input
+                                                            type="number"
+                                                            value={scope.isFixedRate ? scope.area : Number(scope.area.toFixed(1))}
+                                                            onChange={e => handleScopeChange(scope.id, 'area', Number(e.target.value))}
+                                                            disabled={scope.isFixedRate}
+                                                            className={`w-20 text-right font-medium bg-transparent border-b border-transparent focus:border-blue-300 outline-none transition-colors ${scope.isFixedRate ? 'text-slate-400 cursor-not-allowed' : 'text-slate-600'}`}
+                                                        />
+                                                        {scope.isFixedRate && <span className="absolute right-0 -mr-6 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-bold">식</span>}
+                                                    </div>
                                                 </td>
                                                 <td className="py-4 text-right align-middle">
                                                     <input
@@ -783,10 +679,7 @@ export default function Page() {
                     <div className="bg-blue-600 rounded-[2rem] p-10 text-white text-center shadow-lg shadow-blue-600/20 relative overflow-hidden">
                         <div className="relative z-10">
                             <h3 className="text-2xl font-black mb-3">전문가 검토가 필요하신가요?</h3>
-                            <p className="text-blue-100 text-base mb-8 font-medium">입력하신 데이터를 바탕으로 AI 튜터가 리스크를 분석해 드립니다.</p>
-                            <button onClick={() => setIsAiOpen(true)} className="bg-white text-blue-600 font-extrabold px-8 py-3.5 rounded-xl flex items-center gap-2 mx-auto hover:bg-blue-50 hover:scale-105 transition-all shadow-lg active:scale-95">
-                                <Zap size={20} /> AI 튜터 열기
-                            </button>
+                            <p className="text-blue-100 text-base mb-8 font-medium">상세 견적 검토는 시설팀으로 문의해주세요.</p>
                         </div>
                         <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-20 -mt-20 blur-3xl"></div>
                         <div className="absolute bottom-0 left-0 w-64 h-64 bg-black/10 rounded-full -ml-20 -mb-20 blur-3xl"></div>
@@ -795,83 +688,6 @@ export default function Page() {
 
             </main>
 
-            {/* --- MODALS --- */}
-
-            {/* API Key Modal */}
-            <AnimatePresence>
-                {showApiKeyModal && (
-                    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white rounded-3xl w-full max-w-md shadow-2xl p-8">
-                            <div className="flex items-center gap-3 mb-6 text-slate-800">
-                                <div className="bg-blue-100 p-3 rounded-xl text-blue-600"><Key size={24} /></div>
-                                <h3 className="font-black text-xl">API Key 설정</h3>
-                            </div>
-                            <p className="text-slate-500 text-sm mb-6 leading-relaxed font-medium">
-                                Google Gemini API 키가 필요합니다. <br />키는 브라우저에만 저장됩니다.
-                            </p>
-                            <input type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="AIzaSy..." className="w-full bg-slate-50 border-none rounded-2xl px-5 py-4 focus:ring-2 focus:ring-blue-500 outline-none font-mono text-sm mb-4" />
-                            <button onClick={() => saveApiKey(apiKey)} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-2xl transition-all mb-3 text-sm">저장하기</button>
-                            <button onClick={() => setShowApiKeyModal(false)} className="w-full text-slate-400 hover:text-slate-600 text-sm font-bold py-2">닫기</button>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
-
-            {/* AI Report Modal */}
-            <AnimatePresence>
-                {aiModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-                        <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="bg-white rounded-3xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
-                            <div className={`p-6 flex justify-between items-center text-white ${aiModalContent.type === 'report' ? 'bg-blue-600' : 'bg-green-600'}`}>
-                                <div className="flex items-center gap-3">
-                                    {aiModalContent.type === 'report' ? <FileSearch size={24} /> : <ClipboardCheck size={24} />}
-                                    <h3 className="font-bold text-lg">{aiModalContent.title}</h3>
-                                </div>
-                                <button onClick={() => setAiModalOpen(false)} className="hover:bg-white/20 p-2 rounded-full transition-colors"><X size={24} /></button>
-                            </div>
-                            <div className="p-8 overflow-y-auto flex-1 bg-slate-50">
-                                {isAiProcessing ? (
-                                    <div className="flex flex-col items-center justify-center h-64 gap-6 text-slate-400">
-                                        <Loader2 size={48} className="animate-spin text-blue-500" />
-                                        <p className="font-bold animate-pulse">AI가 데이터를 분석 중입니다...</p>
-                                    </div>
-                                ) : (
-                                    <div className="prose prose-sm max-w-none text-slate-700 whitespace-pre-wrap leading-loose font-medium bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                                        {aiModalContent.content}
-                                    </div>
-                                )}
-                            </div>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
-
-            {/* Chat Drawer */}
-            <AnimatePresence>
-                {isAiOpen && (
-                    <motion.div initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: 'spring', damping: 25 }} className="fixed top-0 right-0 h-full w-full md:w-[450px] bg-white shadow-2xl z-50 flex flex-col no-print border-l border-slate-200">
-                        <div className="p-6 border-b flex justify-between items-center bg-white">
-                            <div className="font-black text-xl text-slate-800 flex items-center gap-2"><div className="bg-blue-600 text-white p-1.5 rounded-lg"><Zap size={18} /></div> AI 튜터</div>
-                            <button onClick={() => setIsAiOpen(false)} className="bg-slate-100 p-2 rounded-full hover:bg-slate-200"><X size={20} /></button>
-                        </div>
-                        <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50">
-                            {chatHistory.map((m, i) => (
-                                <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                    <div className={`max-w-[85%] p-4 rounded-2xl text-sm leading-relaxed font-medium shadow-sm ${m.role === 'user' ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-white border border-slate-100 text-slate-700 rounded-tl-none'}`}>{m.text}</div>
-                                </div>
-                            ))}
-                            {isGenerating && <div className="text-xs text-slate-400 p-2 font-bold animate-pulse">AI가 답변을 작성 중입니다...</div>}
-                            <div ref={chatEndRef}></div>
-                        </div>
-                        <div className="p-4 border-t bg-white">
-                            <div className="flex gap-2">
-                                <input className="flex-1 bg-slate-100 border-none rounded-xl px-4 py-3 text-sm outline-none font-medium focus:ring-2 focus:ring-blue-500 transition-all" value={userInput} onChange={e => setUserInput(e.target.value)} onKeyPress={e => e.key === 'Enter' && handleSendMessage()} placeholder="궁금한 내용을 입력하세요..." />
-                                <button onClick={handleSendMessage} className="bg-blue-600 hover:bg-blue-500 text-white p-3 rounded-xl transition-colors"><Send size={20} /></button>
-                            </div>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
         </div>
     );
 }
