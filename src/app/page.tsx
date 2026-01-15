@@ -776,7 +776,7 @@ export default function Page() {
                     <div className="bg-blue-600 rounded-[2rem] p-10 text-white text-center shadow-lg shadow-blue-600/20 relative overflow-hidden">
                         <div className="relative z-10">
                             <h3 className="text-2xl font-black mb-3">전문가 검토가 필요하신가요?</h3>
-                            <p className="text-blue-100 text-base mb-8 font-medium">상세 견적 검토는 시설팀 또는 총무팀으로 문의해주세요.</p>
+                            <p className="text-blue-100 text-base mb-8 font-medium">상세 견적 검토는 총무팀으로 문의해주세요.</p>
                         </div>
                         <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-20 -mt-20 blur-3xl"></div>
                         <div className="absolute bottom-0 left-0 w-64 h-64 bg-black/10 rounded-full -ml-20 -mb-20 blur-3xl"></div>
