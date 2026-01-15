@@ -28,6 +28,8 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 // --- Types ---
 type ZoneType = 'fashion' | 'living' | 'fnb' | 'back';
@@ -379,7 +381,103 @@ export default function Page() {
 
     const totals = calculateTotal();
 
-    const handlePrint = () => { window.print(); };
+    const handleDownloadPDF = async () => {
+        const element = document.getElementById('estimate-content');
+        if (!element) return;
+
+        try {
+            const canvas = await html2canvas(element, {
+                scale: 2,
+                useCORS: true,
+                logging: false,
+                onclone: (documentClone) => {
+                    const clone = documentClone.querySelector('#estimate-content') as HTMLElement;
+                    if (clone) {
+                        // 1. Force light background for the container
+                        clone.style.backgroundColor = 'white';
+                        clone.style.color = 'black';
+
+                        // 2. Handle Hero Section specifically
+                        const hero = clone.querySelector('#hero-section') as HTMLElement;
+                        if (hero) {
+                            hero.style.backgroundColor = 'white';
+                            hero.style.color = 'black';
+                            hero.style.boxShadow = 'none';
+                            hero.style.borderBottom = '2px solid black';
+                            hero.style.borderRadius = '0';
+
+                            // Adjust text colors inside hero
+                            const texts = hero.querySelectorAll('*');
+                            texts.forEach((el: any) => {
+                                el.style.color = 'black';
+                                el.style.borderColor = '#e2e8f0'; // slate-200
+                            });
+
+                            // Hide background decorations
+                            const decorations = hero.querySelectorAll('.absolute');
+                            decorations.forEach((el: any) => el.style.display = 'none');
+
+                            // Ensure title is visible and black
+                            const title = hero.querySelector('h2');
+                            if (title) title.style.color = 'black';
+                        }
+
+                        // 3. Hide No-Print elements
+                        const noPrints = clone.querySelectorAll('.no-print');
+                        noPrints.forEach((el: any) => el.style.display = 'none');
+
+                        // 4. Show Print-Only elements
+                        const printOnly = clone.querySelectorAll('.print\\:block');
+                        printOnly.forEach((el: any) => {
+                            el.classList.remove('hidden');
+                            el.style.display = 'block';
+                        });
+
+                        // 5. Adjust grids/layout gaps if needed
+                        clone.style.padding = '20px';
+                    }
+                }
+            });
+
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+            // If height exceeds A4, we might need multiple pages, but for now single page scaling or fit
+            // A simple fit for now. If it's too long, it will be squashed or cut. 
+            // Better to just add image with auto height.
+
+            if (pdfHeight > pdf.internal.pageSize.getHeight()) {
+                // Multi-page logic could be complex. For a single estimate sheet, we fitwidth.
+                // If it's very long, user might prefer scale-to-fit or multi-page.
+                // Given the context (Estimate), it usually fits or slightly overflows. 
+                // Let's implement multi-page split if needed or just simple addImage.
+                // For now, standard single long image approach:
+
+                let heightLeft = pdfHeight;
+                let position = 0;
+                const pageHeight = pdf.internal.pageSize.getHeight();
+
+                pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
+                heightLeft -= pageHeight;
+
+                while (heightLeft >= 0) {
+                    position = heightLeft - pdfHeight; // top position is negative to show next part
+                    pdf.addPage();
+                    pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
+                    heightLeft -= pageHeight;
+                }
+            } else {
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+            }
+
+            pdf.save(`${projectInfo.name}_견적서.pdf`);
+        } catch (error) {
+            console.error('PDF Generation Error:', error);
+            alert('PDF 생성 중 오류가 발생했습니다.');
+        }
+    };
 
     // --- RENDER ---
 
@@ -405,10 +503,11 @@ export default function Page() {
                 </div>
             </header>
 
-            <main className="max-w-4xl mx-auto p-4 md:p-8 space-y-6 md:space-y-8">
+            <main id="estimate-content" className="max-w-4xl mx-auto p-4 md:p-8 space-y-6 md:space-y-8">
 
                 {/* 1. HERO SECTION */}
                 <motion.div
+                    id="hero-section"
                     initial={{ opacity: 0, scale: 0.99 }} animate={{ opacity: 1, scale: 1 }}
                     className="bg-[#111827] text-white rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-10 relative overflow-hidden shadow-2xl print:bg-white print:text-black print:border-b-2 print:border-black"
                 >
@@ -420,8 +519,8 @@ export default function Page() {
                             <span className="bg-white/10 backdrop-blur-md text-white border border-white/20 text-[11px] font-extrabold px-3 py-1.5 rounded-full tracking-wider shadow-sm">PROJECT ESTIMATE</span>
                             <span className="text-slate-400 text-xs font-semibold">{new Date().toLocaleDateString()} 기준</span>
                         </div>
-                        <button onClick={handlePrint} className="bg-white/5 hover:bg-white/10 border border-white/10 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all backdrop-blur-sm no-print text-slate-200 hover:text-white">
-                            <Download size={16} /> PDF 저장/인쇄
+                        <button onClick={handleDownloadPDF} className="bg-white/5 hover:bg-white/10 border border-white/10 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all backdrop-blur-sm no-print text-slate-200 hover:text-white">
+                            <Download size={16} /> PDF 다운로드
                         </button>
                     </div>
 
@@ -543,13 +642,14 @@ export default function Page() {
                                                 const val = Number(e.target.value);
                                                 if (!isNaN(val)) setArea(Number((val / 0.3025).toFixed(2)));
                                             }}
+                                            onFocus={(e) => e.target.select()}
                                             className="w-full bg-white border border-slate-200 rounded-2xl px-4 py-3 font-black text-xl text-center text-slate-800 outline-none shadow-sm focus:border-blue-500 transition-all"
                                         />
                                         <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 pointer-events-none">평</span>
                                     </div>
                                     <span className="text-slate-300">⇄</span>
                                     <div className="relative flex-1">
-                                        <input type="number" step="0.01" value={area} onChange={e => setArea(Number(e.target.value))} className="w-full bg-white border border-slate-200 rounded-2xl px-4 py-3 font-black text-xl text-center text-slate-800 outline-none shadow-sm focus:border-blue-500 transition-all" />
+                                        <input type="number" step="0.01" value={area} onChange={e => setArea(Number(e.target.value))} onFocus={(e) => e.target.select()} className="w-full bg-white border border-slate-200 rounded-2xl px-4 py-3 font-black text-xl text-center text-slate-800 outline-none shadow-sm focus:border-blue-500 transition-all" />
                                         <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 pointer-events-none">m²</span>
                                     </div>
                                 </div>
