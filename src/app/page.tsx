@@ -390,9 +390,18 @@ export default function Page() {
                 scale: 2,
                 useCORS: true,
                 logging: false,
+                windowWidth: 1400, // Force desktop width for mobile devices
                 onclone: (documentClone) => {
                     const clone = documentClone.querySelector('#estimate-content') as HTMLElement;
                     if (clone) {
+                        // 0. Force Layout Width (Desktop View)
+                        clone.style.width = '1100px'; // Wide enough for tables
+                        clone.style.maxWidth = 'none';
+                        clone.style.margin = '0 auto';
+                        clone.style.position = 'absolute'; // Removed from flow to avoid constraints
+                        clone.style.left = '0';
+                        clone.style.top = '0';
+
                         // 1. Force light background for the container
                         clone.style.backgroundColor = 'white';
                         clone.style.color = 'black';
@@ -433,8 +442,17 @@ export default function Page() {
                             el.style.display = 'block';
                         });
 
-                        // 5. Adjust grids/layout gaps if needed
-                        clone.style.padding = '20px';
+                        // 5. Expand Tables (Remove scroll)
+                        const scrollables = clone.querySelectorAll('.overflow-x-auto');
+                        scrollables.forEach((el: any) => {
+                            el.classList.remove('overflow-x-auto');
+                            el.style.overflow = 'visible';
+                            el.style.width = '100%';
+                        });
+
+                        // 6. Adjust grids/layout gaps if needed
+                        clone.style.padding = '40px'; // Add comfortable padding
+                        // Force font size adjustment if needed, but width fix usually solves "large text" relative issue.
                     }
                 }
             });
