@@ -68,7 +68,7 @@ export default function Page() {
 
     const grades: Record<GradeType, { name: string; multiplier: number; desc: string }> = {
         basic: { name: '실속형', multiplier: 0.9, desc: '가성비 위주의 마감재' },
-        standard: { name: '표준형', multiplier: 1.0, desc: '아이파크몰 권장 표준 사양' },
+        standard: { name: '표준형', multiplier: 0.8, desc: '아이파크몰 권장 표준 사양' },
         premium: { name: '프리미엄', multiplier: 1.3, desc: '수입 자재 및 특수 디자인 적용' }
     };
 
@@ -197,10 +197,10 @@ export default function Page() {
 
     const getGradeMultiplier = (g: GradeType, p: number) => {
         if (g === 'standard') {
-            if (p < 100) return 1.2;
-            if (p < 500) return 1.1;
-            if (p < 1000) return 1.0;
-            return 0.9;
+            if (p < 100) return 0.96;
+            if (p < 500) return 0.88;
+            if (p < 1000) return 0.80;
+            return 0.72;
         }
         if (g === 'basic') {
             if (p < 100) return 1.2;
