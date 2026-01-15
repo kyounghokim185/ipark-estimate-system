@@ -350,8 +350,31 @@ export default function Page() {
             }
         });
 
-        const overhead = Math.round(subtotal * 0.10);
-        return { subtotal, overhead, total: subtotal + overhead };
+        // Breakdown: Insurance (7.5%), Profit (7.0%), Safety (Dynamic)
+        // 1. Insurance: 7.5%
+        const insurance = Math.round(subtotal * 0.075);
+
+        // 2. Safety Management Cost: General Construction (Gap)
+        // < 500 million: 2.93%
+        // 500 million ~ 5 billion: 1.86% + 5,349,000
+        // >= 5 billion: 1.97%
+        let safety = 0;
+        if (subtotal < 500000000) {
+            safety = Math.round(subtotal * 0.0293);
+        } else if (subtotal < 5000000000) {
+            safety = Math.round(subtotal * 0.0186) + 5349000;
+        } else {
+            safety = Math.round(subtotal * 0.0197);
+        }
+
+        // 3. Corporate Profit: 7.0%
+        const profit = Math.round(subtotal * 0.07);
+
+        const overhead = insurance + safety + profit;
+        const total = subtotal + overhead;
+        const overheadRate = total > 0 ? (overhead / subtotal) : 0; // For reference if needed
+
+        return { subtotal, overhead, insurance, safety, profit, total };
     };
 
     const totals = calculateTotal();
@@ -416,8 +439,8 @@ export default function Page() {
                             <p className="text-slate-400 text-[10px] md:text-xs font-bold mb-1 md:mb-2 uppercase tracking-wide">총 예상 공사비 (VAT 별도)</p>
                             <div className="text-4xl md:text-6xl font-black tracking-tighter mb-2">₩ {totals.total.toLocaleString()}</div>
                             <div className="flex flex-wrap gap-3 md:gap-4 text-[10px] md:text-xs font-medium text-slate-400">
-                                <span>순공사비: {totals.subtotal.toLocaleString()}</span>
-                                <span className="text-blue-400">일반관리비: {totals.overhead.toLocaleString()}</span>
+                                <span>직접공사비: {totals.subtotal.toLocaleString()}</span>
+                                <span className="text-blue-400">간접공사비: {totals.overhead.toLocaleString()}</span>
                             </div>
                         </div>
                         {/* AI Button Removed */}
@@ -542,7 +565,7 @@ export default function Page() {
                 <div className="bg-white rounded-[2rem] p-8 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-slate-100 print:break-inside-avoid">
                     <div className="flex items-center justify-between mb-8">
                         <h3 className="text-lg font-extrabold flex items-center gap-3 text-slate-800 border-l-4 border-blue-600 pl-3">
-                            <Calculator className="text-blue-600" size={24} /> 공종별 상세 내역
+                            <Calculator className="text-blue-600" size={24} /> A. 직접 공사비
                         </h3>
                         {/* AI Button Removed */}
                     </div>
@@ -670,6 +693,46 @@ export default function Page() {
                         </table>
                     </div>
 
+                    {/* B. Indirect Construction Cost Section */}
+                    <div className="mb-12">
+                        <h3 className="text-lg font-extrabold flex items-center gap-3 text-slate-800 border-l-4 border-slate-500 pl-3 mb-6">
+                            <Briefcase className="text-slate-500" size={24} /> B. 간접 공사비
+                        </h3>
+                        <div className="bg-slate-50 rounded-2xl overflow-hidden border border-slate-200">
+                            <table className="w-full text-sm">
+                                <thead className="bg-slate-100/50 border-b border-slate-200">
+                                    <tr>
+                                        <th className="py-3 pl-6 text-left text-slate-500 font-bold">구분</th>
+                                        <th className="py-3 text-right text-slate-500 font-bold">비율</th>
+                                        <th className="py-3 pr-6 text-right text-slate-500 font-bold">금액(원)</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    <tr>
+                                        <td className="py-4 pl-6 font-bold text-slate-700">각종 보험료 (고용/산재 등)</td>
+                                        <td className="py-4 text-right text-slate-500">7.5%</td>
+                                        <td className="py-4 pr-6 text-right font-black text-slate-800">{totals.insurance.toLocaleString()}</td>
+                                    </tr>
+                                    <tr>
+                                        <td className="py-4 pl-6 font-bold text-slate-700">안전관리비 <span className="text-[10px] bg-slate-100 text-slate-400 px-1.5 py-0.5 rounded ml-1">법정요율</span></td>
+                                        <td className="py-4 text-right text-slate-500 text-xs">{(totals.safety / totals.subtotal * 100).toFixed(2)}%</td>
+                                        <td className="py-4 pr-6 text-right font-black text-slate-800">{totals.safety.toLocaleString()}</td>
+                                    </tr>
+                                    <tr>
+                                        <td className="py-4 pl-6 font-bold text-slate-700">기업이윤 및 공과 잡비</td>
+                                        <td className="py-4 text-right text-slate-500">7.0%</td>
+                                        <td className="py-4 pr-6 text-right font-black text-slate-800">{totals.profit.toLocaleString()}</td>
+                                    </tr>
+                                    <tr className="bg-blue-50/50">
+                                        <td className="py-4 pl-6 font-extrabold text-blue-900">소계</td>
+                                        <td className="py-4 text-right text-blue-800 font-bold">{totals.subtotal > 0 ? (totals.overhead / totals.subtotal * 100).toFixed(1) : 0}%</td>
+                                        <td className="py-4 pr-6 text-right font-extrabold text-blue-900">{totals.overhead.toLocaleString()}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
                     {/* Site Photos */}
                     <div className="pt-8 border-t border-slate-100">
                         <div className="flex justify-between items-center mb-6">
@@ -705,7 +768,7 @@ export default function Page() {
                         <div>
                             <h4 className="font-bold text-amber-900 mb-2">예산 관리 TIP</h4>
                             <p className="text-sm text-amber-800 leading-relaxed font-medium">
-                                순공사비 기준 평당 단가는 약 <strong className="text-amber-900">{Math.round(totals.subtotal / (area * 0.3025)).toLocaleString()}원</strong>입니다. 불필요한 마감재 스펙을 조정하면 예산을 절감할 수 있습니다.
+                                순공사비 기준 평당 단가는 약 <strong className="text-amber-900">{Math.round(totals.total / (area * 0.3025)).toLocaleString()}원</strong>입니다. 불필요한 마감재 스펙을 조정하면 예산을 절감할 수 있습니다.
                             </p>
                         </div>
                     </div>
@@ -713,7 +776,7 @@ export default function Page() {
                     <div className="bg-blue-600 rounded-[2rem] p-10 text-white text-center shadow-lg shadow-blue-600/20 relative overflow-hidden">
                         <div className="relative z-10">
                             <h3 className="text-2xl font-black mb-3">전문가 검토가 필요하신가요?</h3>
-                            <p className="text-blue-100 text-base mb-8 font-medium">상세 견적 검토는 시설팀으로 문의해주세요.</p>
+                            <p className="text-blue-100 text-base mb-8 font-medium">상세 견적 검토는 시설팀 또는 총무팀으로 문의해주세요.</p>
                         </div>
                         <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-20 -mt-20 blur-3xl"></div>
                         <div className="absolute bottom-0 left-0 w-64 h-64 bg-black/10 rounded-full -ml-20 -mb-20 blur-3xl"></div>
