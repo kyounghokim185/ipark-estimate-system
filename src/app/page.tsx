@@ -386,108 +386,136 @@ export default function Page() {
         if (!element) return;
 
         try {
-            const canvas = await html2canvas(element, {
-                scale: 2,
+            // 1. Capture Page 1: Hero + Basic Info + Criteria
+            const canvas1 = await html2canvas(element, {
+                scale: 2, // High resolution
                 useCORS: true,
                 logging: false,
-                windowWidth: 1400, // Force desktop width for mobile devices
+                windowWidth: 1400, // Trigger desktop layout
                 onclone: (documentClone) => {
                     const clone = documentClone.querySelector('#estimate-content') as HTMLElement;
                     if (clone) {
-                        // 0. Force Layout Width (Desktop View)
-                        clone.style.width = '1100px'; // Wide enough for tables
-                        clone.style.maxWidth = 'none';
-                        clone.style.margin = '0 auto';
-                        clone.style.position = 'absolute'; // Removed from flow to avoid constraints
-                        clone.style.left = '0';
-                        clone.style.top = '0';
-
-                        // 1. Force light background for the container
-                        clone.style.backgroundColor = 'white';
-                        clone.style.color = 'black';
-
-                        // 2. Handle Hero Section specifically
-                        const hero = clone.querySelector('#hero-section') as HTMLElement;
-                        if (hero) {
-                            hero.style.backgroundColor = 'white';
-                            hero.style.color = 'black';
-                            hero.style.boxShadow = 'none';
-                            hero.style.borderBottom = '2px solid black';
-                            hero.style.borderRadius = '0';
-
-                            // Adjust text colors inside hero
-                            const texts = hero.querySelectorAll('*');
-                            texts.forEach((el: any) => {
-                                el.style.color = 'black';
-                                el.style.borderColor = '#e2e8f0'; // slate-200
-                            });
-
-                            // Hide background decorations
-                            const decorations = hero.querySelectorAll('.absolute');
-                            decorations.forEach((el: any) => el.style.display = 'none');
-
-                            // Ensure title is visible and black
-                            const title = hero.querySelector('h2');
-                            if (title) title.style.color = 'black';
-                        }
-
-                        // 3. Hide No-Print elements
-                        const noPrints = clone.querySelectorAll('.no-print');
-                        noPrints.forEach((el: any) => el.style.display = 'none');
-
-                        // 4. Show Print-Only elements
-                        const printOnly = clone.querySelectorAll('.print\\:block');
-                        printOnly.forEach((el: any) => {
-                            el.classList.remove('hidden');
-                            el.style.display = 'block';
-                        });
-
-                        // 5. Expand Tables (Remove scroll)
-                        const scrollables = clone.querySelectorAll('.overflow-x-auto');
-                        scrollables.forEach((el: any) => {
-                            el.classList.remove('overflow-x-auto');
-                            el.style.overflow = 'visible';
-                            el.style.width = '100%';
-                        });
-
-                        // 6. Adjust grids/layout gaps if needed
-                        clone.style.padding = '40px'; // Add comfortable padding
-                        // Force font size adjustment if needed, but width fix usually solves "large text" relative issue.
+                        applyPdfStyles(clone);
+                        // Hide detailed list for Page 1
+                        const detailedList = clone.querySelector('#section-detailed-list') as HTMLElement;
+                        if (detailedList) detailedList.style.display = 'none';
+                        // Keep Hero, Basic Info, Criteria VISIBLE
                     }
                 }
             });
 
-            const imgData = canvas.toDataURL('image/png');
+            // 2. Capture Page 2: Detailed List (+ Photos if inside)
+            const canvas2 = await html2canvas(element, {
+                scale: 2,
+                useCORS: true,
+                logging: false,
+                windowWidth: 1400,
+                onclone: (documentClone) => {
+                    const clone = documentClone.querySelector('#estimate-content') as HTMLElement;
+                    if (clone) {
+                        applyPdfStyles(clone);
+
+                        // Hide Top Sections
+                        const hero = clone.querySelector('#hero-section') as HTMLElement;
+                        if (hero) hero.style.display = 'none';
+                        const basicInfo = clone.querySelector('#section-basic-info') as HTMLElement;
+                        if (basicInfo) basicInfo.style.display = 'none';
+                        const criteria = clone.querySelector('#section-criteria') as HTMLElement;
+                        if (criteria) criteria.style.display = 'none';
+
+                        // Show Detailed List (It's visible by default, but ensuring top sections gone makes it jump to top)
+                    }
+                }
+            });
+
+            // Helper to apply common styles
+            function applyPdfStyles(clone: HTMLElement) {
+                // 0. Width & Layout - narrower width makes text look larger on A4
+                clone.style.width = '900px';
+                clone.style.maxWidth = 'none';
+                clone.style.margin = '0 auto';
+                clone.style.padding = '40px';
+                clone.style.backgroundColor = 'white';
+                clone.style.color = 'black';
+                clone.style.position = 'absolute';
+                clone.style.left = '0';
+                clone.style.top = '0';
+
+                // Hero Style Override
+                const hero = clone.querySelector('#hero-section') as HTMLElement;
+                if (hero) {
+                    hero.style.backgroundColor = 'white';
+                    hero.style.color = 'black';
+                    hero.style.boxShadow = 'none';
+                    hero.style.borderBottom = '3px solid black';
+                    hero.style.borderRadius = '0';
+                    const texts = hero.querySelectorAll('*');
+                    texts.forEach((el: any) => {
+                        el.style.color = 'black';
+                        el.style.borderColor = '#e2e8f0';
+                    });
+                    const decorations = hero.querySelectorAll('.absolute');
+                    decorations.forEach((el: any) => el.style.display = 'none');
+                }
+
+                // Input Fixes (No Border, Plain Text look)
+                const inputs = clone.querySelectorAll('input, select');
+                inputs.forEach((el: any) => {
+                    el.style.border = 'none';
+                    el.style.backgroundColor = 'transparent';
+                    el.style.appearance = 'none';
+                    el.style.textAlign = el.type === 'number' || el.classList.contains('text-right') ? 'right' : 'left';
+                    // Add padding to prevent cutoff
+                    el.style.padding = '5px 0';
+                    el.style.height = 'auto';
+                    el.style.width = '100%';
+                    // Ensure text color is black
+                    el.style.color = 'black';
+                });
+
+                // General cleanups
+                const noPrints = clone.querySelectorAll('.no-print');
+                noPrints.forEach((el: any) => el.style.display = 'none');
+
+                const scrollables = clone.querySelectorAll('.overflow-x-auto');
+                scrollables.forEach((el: any) => {
+                    el.classList.remove('overflow-x-auto');
+                    el.style.overflow = 'visible';
+                });
+            }
+
             const pdf = new jsPDF('p', 'mm', 'a4');
             const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
 
-            // If height exceeds A4, we might need multiple pages, but for now single page scaling or fit
-            // A simple fit for now. If it's too long, it will be squashed or cut. 
-            // Better to just add image with auto height.
+            // Add Page 1
+            const imgData1 = canvas1.toDataURL('image/png');
+            const pdfHeight1 = (canvas1.height * pdfWidth) / canvas1.width;
+            pdf.addImage(imgData1, 'PNG', 0, 0, pdfWidth, pdfHeight1);
 
-            if (pdfHeight > pdf.internal.pageSize.getHeight()) {
-                // Multi-page logic could be complex. For a single estimate sheet, we fitwidth.
-                // If it's very long, user might prefer scale-to-fit or multi-page.
-                // Given the context (Estimate), it usually fits or slightly overflows. 
-                // Let's implement multi-page split if needed or just simple addImage.
-                // For now, standard single long image approach:
+            // Add Page 2
+            pdf.addPage();
+            const imgData2 = canvas2.toDataURL('image/png');
+            const pdfHeight2 = (canvas2.height * pdfWidth) / canvas2.width;
 
-                let heightLeft = pdfHeight;
+            // If Page 2 is very long, we might still need multi-page split for the list itself,
+            // but for now we put the list on Page 2. If the list is huge, we might need more logic.
+            // Assuming reasonable list size for this request.
+            if (pdfHeight2 > pdf.internal.pageSize.getHeight()) {
+                let heightLeft = pdfHeight2;
                 let position = 0;
                 const pageHeight = pdf.internal.pageSize.getHeight();
 
-                pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
+                pdf.addImage(imgData2, 'PNG', 0, position, pdfWidth, pdfHeight2);
                 heightLeft -= pageHeight;
 
                 while (heightLeft >= 0) {
-                    position = heightLeft - pdfHeight; // top position is negative to show next part
+                    position = heightLeft - pdfHeight2;
                     pdf.addPage();
-                    pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
+                    pdf.addImage(imgData2, 'PNG', 0, position, pdfWidth, pdfHeight2);
                     heightLeft -= pageHeight;
                 }
             } else {
-                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                pdf.addImage(imgData2, 'PNG', 0, 0, pdfWidth, pdfHeight2);
             }
 
             pdf.save(`${projectInfo.name}_견적서.pdf`);
@@ -570,7 +598,7 @@ export default function Page() {
                 </motion.div>
 
                 {/* 2. Basic Info Card */}
-                <div className="bg-white rounded-[2rem] p-6 md:p-8 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-slate-100 print:shadow-none print:border print:border-slate-300">
+                <div id="section-basic-info" className="bg-white rounded-[2rem] p-6 md:p-8 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-slate-100 print:shadow-none print:border print:border-slate-300">
                     <h3 className="text-lg font-extrabold flex items-center gap-3 mb-6 md:mb-8 text-slate-800 border-l-4 border-blue-600 pl-3">
                         <FileText className="text-blue-600" size={24} /> 공사 개요 및 기본 설정
                     </h3>
@@ -602,7 +630,7 @@ export default function Page() {
                 </div>
 
                 {/* 3. Criteria Settings */}
-                <div className="bg-white rounded-[2rem] p-8 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-slate-100 print:break-inside-avoid">
+                <div id="section-criteria" className="bg-white rounded-[2rem] p-8 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-slate-100 print:break-inside-avoid">
                     <h3 className="text-lg font-extrabold flex items-center gap-3 mb-8 text-slate-800 border-l-4 border-blue-600 pl-3">
                         <Settings className="text-blue-600" size={24} /> 견적 산출 기준 설정
                     </h3>
@@ -680,7 +708,7 @@ export default function Page() {
                 </div>
 
                 {/* 4. Detailed List & Photos */}
-                <div className="bg-white rounded-[2rem] p-8 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-slate-100 print:break-inside-avoid">
+                <div id="section-detailed-list" className="bg-white rounded-[2rem] p-8 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-slate-100 print:break-inside-avoid">
                     <div className="flex items-center justify-between mb-8">
                         <h3 className="text-lg font-extrabold flex items-center gap-3 text-slate-800 border-l-4 border-blue-600 pl-3">
                             <Calculator className="text-blue-600" size={24} /> A. 직접 공사비
