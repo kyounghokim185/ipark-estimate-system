@@ -391,7 +391,7 @@ export default function Page() {
             <header className="bg-white border-b border-slate-200 sticky top-0 z-30 flex flex-wrap gap-2 justify-between items-center px-4 md:px-6 py-4 no-print shadow-sm font-medium">
                 <div className="flex items-center gap-2 md:gap-3">
                     <div className="bg-blue-600 p-2 rounded-xl shrink-0"><Building2 className="text-white" size={18} /></div>
-                    <span className="text-sm md:text-xl font-black text-slate-800 tracking-tight leading-none">IPARK MALL <span className="text-blue-600 block md:inline">Smart Estimator</span></span>
+                    <span className="text-sm md:text-xl font-black text-slate-800 tracking-tight leading-none">IPARK MALL <span className="text-blue-600 block md:inline">총무팀 Smart Estimator</span></span>
                 </div>
                 <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0 scrollbar-hide">
                     <Link href="/dashboard" className="flex items-center gap-1 md:gap-2 px-3 py-2 rounded-xl text-slate-500 font-bold hover:bg-slate-100 hover:text-blue-600 transition-colors text-xs whitespace-nowrap">
