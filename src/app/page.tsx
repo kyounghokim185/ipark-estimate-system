@@ -431,15 +431,16 @@ export default function Page() {
             // Helper to apply common styles
             function applyPdfStyles(clone: HTMLElement) {
                 // 0. Width & Layout - narrower width makes text look larger on A4
-                clone.style.width = '900px';
+                clone.style.width = '800px';
                 clone.style.maxWidth = 'none';
                 clone.style.margin = '0 auto';
-                clone.style.padding = '40px';
+                clone.style.padding = '15px'; // Drastically reduced from 40px
                 clone.style.backgroundColor = 'white';
                 clone.style.color = 'black';
                 clone.style.position = 'absolute';
                 clone.style.left = '0';
                 clone.style.top = '0';
+                clone.style.boxSizing = 'border-box';
 
                 // Hero Style Override
                 const hero = clone.querySelector('#hero-section') as HTMLElement;
@@ -447,8 +448,10 @@ export default function Page() {
                     hero.style.backgroundColor = 'white';
                     hero.style.color = 'black';
                     hero.style.boxShadow = 'none';
-                    hero.style.borderBottom = '3px solid black';
+                    hero.style.borderBottom = '2px solid black';
                     hero.style.borderRadius = '0';
+                    hero.style.padding = '15px';
+                    hero.style.marginBottom = '15px';
                     const texts = hero.querySelectorAll('*');
                     texts.forEach((el: any) => {
                         el.style.color = 'black';
@@ -458,6 +461,16 @@ export default function Page() {
                     decorations.forEach((el: any) => el.style.display = 'none');
                 }
 
+                // Compact Sections (Basic Info, Criteria, Detailed List)
+                const sections = clone.querySelectorAll('#section-basic-info, #section-criteria, #section-detailed-list');
+                sections.forEach((el: any) => {
+                    el.style.padding = '15px'; // Compact padding
+                    el.style.borderRadius = '0';
+                    el.style.boxShadow = 'none';
+                    el.style.border = '1px solid #ccc';
+                    el.style.marginBottom = '15px';
+                });
+
                 // Input Fixes (No Border, Plain Text look)
                 const inputs = clone.querySelectorAll('input, select');
                 inputs.forEach((el: any) => {
@@ -465,12 +478,25 @@ export default function Page() {
                     el.style.backgroundColor = 'transparent';
                     el.style.appearance = 'none';
                     el.style.textAlign = el.type === 'number' || el.classList.contains('text-right') ? 'right' : 'left';
-                    // Add padding to prevent cutoff
-                    el.style.padding = '5px 0';
+                    el.style.padding = '0';
                     el.style.height = 'auto';
                     el.style.width = '100%';
-                    // Ensure text color is black
                     el.style.color = 'black';
+                    el.style.fontSize = '11px'; // Smaller font for inputs
+                });
+
+                // Compact Table Cells
+                const tableCells = clone.querySelectorAll('th, td');
+                tableCells.forEach((el: any) => {
+                    el.style.padding = '4px 2px'; // Very compact padding
+                    el.style.fontSize = '11px'; // Smaller font
+                });
+
+                // Reduce headers size
+                const headers = clone.querySelectorAll('h2, h3, h4');
+                headers.forEach((el: any) => {
+                    el.style.fontSize = '14px'; // Enforce smaller headers
+                    el.style.marginBottom = '8px';
                 });
 
                 // General cleanups
