@@ -306,6 +306,18 @@ export default function Page() {
         setDetailedScopes(prev => prev.map(s => s.id === id ? { ...s, isExpanded: !s.isExpanded } : s));
     };
 
+    const handleAmountChange = (id: string, newAmount: number) => {
+        setDetailedScopes(prev => prev.map(s => {
+            if (s.id === id) {
+                // Derived unit price logic: UnitPrice = Amount / Area
+                if (s.area === 0) return { ...s }; // Avoid division by zero
+                const newUnitPrice = Math.round(newAmount / s.area);
+                return { ...s, unitPrice: newUnitPrice };
+            }
+            return s;
+        }));
+    };
+
     const addDetail = (scopeId: string) => {
         setDetailedScopes(prev => prev.map(s => {
             if (s.id === scopeId) {
@@ -1008,7 +1020,17 @@ export default function Page() {
                                                     />
                                                 </td>
                                                 <td className="py-4 text-right font-black text-slate-800 tracking-tight text-base align-middle w-48">
-                                                    {finalAmount.toLocaleString()}
+                                                    <input
+                                                        type="number"
+                                                        value={finalAmount}
+                                                        onChange={e => {
+                                                            if (!hasDetails) {
+                                                                handleAmountChange(scope.id, Number(e.target.value));
+                                                            }
+                                                        }}
+                                                        disabled={hasDetails} // Disable if driven by details (Amount is sum of details)
+                                                        className={`w-full text-right font-black tracking-tight bg-transparent border-b border-transparent focus:border-blue-300 outline-none transition-colors ${hasDetails ? 'text-slate-400 cursor-not-allowed' : 'text-slate-800'}`}
+                                                    />
                                                 </td>
                                                 <td className="py-4 pl-6 align-middle"><input type="text" value={scope.remarks} onChange={e => handleScopeChange(scope.id, 'remarks', e.target.value)} className="w-full bg-transparent border-b border-transparent focus:border-blue-300 outline-none text-slate-600 placeholder:text-slate-300 transition-colors" placeholder="-" /></td>
                                             </tr>
