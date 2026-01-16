@@ -406,7 +406,8 @@ export default function Page() {
             clone.style.top = '0';
             clone.style.boxSizing = 'border-box';
             clone.style.lineHeight = '1.5';
-            clone.style.height = 'auto';
+            clone.style.height = 'auto'; // Force auto height
+            clone.setAttribute('style', `${clone.getAttribute('style')}; height: auto !important; overflow: visible !important; max-height: none !important;`);
             clone.style.overflow = 'visible';
             clone.style.fontSize = '14px';
 
@@ -471,12 +472,18 @@ export default function Page() {
             scale: 2, // Use 2x scale for better performance with larger width
             useCORS: true,
             logging: false,
-            windowWidth: 1600 // Wide virtual window
+            windowWidth: 1600,
+            windowHeight: 4000 // Increase virtual window height to prevent cutoff
         };
 
         const canvas1 = await html2canvas(element, {
             ...commonOptions,
             onclone: (documentClone) => {
+                const body = documentClone.body;
+                body.style.height = 'auto';
+                body.style.overflow = 'visible';
+                body.style.maxHeight = 'none';
+
                 const clone = documentClone.querySelector('#estimate-content') as HTMLElement;
                 if (clone) {
                     applyPdfStyles(clone);
@@ -495,6 +502,11 @@ export default function Page() {
         const canvas2 = await html2canvas(element, {
             ...commonOptions,
             onclone: (documentClone) => {
+                const body = documentClone.body;
+                body.style.height = 'auto';
+                body.style.overflow = 'visible';
+                body.style.maxHeight = 'none';
+
                 const clone = documentClone.querySelector('#estimate-content') as HTMLElement;
                 if (clone) {
                     applyPdfStyles(clone);
@@ -517,6 +529,11 @@ export default function Page() {
         const canvas3 = await html2canvas(element, {
             ...commonOptions,
             onclone: (documentClone) => {
+                const body = documentClone.body;
+                body.style.height = 'auto';
+                body.style.overflow = 'visible';
+                body.style.maxHeight = 'none';
+
                 const clone = documentClone.querySelector('#estimate-content') as HTMLElement;
                 if (clone) {
                     applyPdfStyles(clone);
@@ -641,15 +658,15 @@ export default function Page() {
             // Safe instantiation of pptxgenjs
             let pres;
             try {
+                // Try direct instantiation first (common in some environments)
                 pres = new pptxgen();
             } catch (e) {
-                // Try default export if direct new fails (Next.js/ESM interop)
-                // @ts-ignore
-                if (typeof pptxgen.default === 'function') {
+                // Fallback for ESM/Next.js default export
+                try {
                     // @ts-ignore
                     pres = new pptxgen.default();
-                } else {
-                    throw e;
+                } catch (e2) {
+                    throw new Error('PPTX library failed to initialize.');
                 }
             }
 
@@ -660,7 +677,16 @@ export default function Page() {
             canvases.forEach(c => {
                 const slide = pres.addSlide();
                 const imgData = c.toDataURL('image/png');
-                slide.addImage({ data: imgData, x: 0, y: 0, w: '100%', h: '100%', sizing: { type: 'contain', w: '100%', h: '100%' } });
+
+                // Use 'contain' to fit image within slide boundaries while maintaining aspect ratio
+                slide.addImage({
+                    data: imgData,
+                    x: 0,
+                    y: 0,
+                    w: '100%',
+                    h: '100%',
+                    sizing: { type: 'contain' }
+                });
             });
 
             await pres.writeFile({ fileName: `${projectInfo.name}_견적서.pptx` });
