@@ -318,6 +318,35 @@ export default function Page() {
         }));
     };
 
+    const handleAddScope = () => {
+        const newId = `custom-${Date.now()}`;
+        setDetailedScopes(prev => [
+            ...prev,
+            {
+                id: newId,
+                label: '새 공종',
+                active: true,
+                area: 100, // Default area
+                unitPrice: 0,
+                remarks: '',
+                isFixedRate: false,
+                details: [],
+                isExpanded: true,
+                isCustom: true // Mark as custom
+            }
+        ]);
+    };
+
+    const handleRemoveScope = (id: string) => {
+        if (confirm('정말 삭제하시겠습니까?')) {
+            setDetailedScopes(prev => prev.filter(s => s.id !== id));
+        }
+    };
+
+    const handleScopeLabelChange = (id: string, newLabel: string) => {
+        setDetailedScopes(prev => prev.map(s => s.id === id ? { ...s, label: newLabel } : s));
+    };
+
     const addDetail = (scopeId: string) => {
         setDetailedScopes(prev => prev.map(s => {
             if (s.id === scopeId) {
@@ -941,9 +970,14 @@ export default function Page() {
                 {/* 4. Detailed List & Photos */}
                 <div id="section-detailed-list" className="bg-white rounded-[2rem] p-8 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-slate-100 print:break-inside-avoid">
                     <div className="flex items-center justify-between mb-8">
-                        <h3 className="text-lg font-extrabold flex items-center gap-3 text-slate-800 border-l-4 border-blue-600 pl-3">
-                            <Calculator className="text-blue-600" size={24} /> A. 직접 공사비
-                        </h3>
+                        <div className="flex items-center gap-4">
+                            <h3 className="text-lg font-extrabold flex items-center gap-3 text-slate-800 border-l-4 border-blue-600 pl-3">
+                                <Calculator className="text-blue-600" size={24} /> A. 직접 공사비
+                            </h3>
+                            <button onClick={handleAddScope} className="text-xs bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors font-bold no-print">
+                                <Plus size={14} /> 공종 추가
+                            </button>
+                        </div>
                         {/* AI Button Removed */}
                     </div>
 
@@ -991,8 +1025,25 @@ export default function Page() {
                                                     </div>
                                                 </td>
                                                 <td className="py-4 font-bold text-slate-700 text-base align-middle">
-                                                    {scope.label}
-                                                    {scope.id === 'licensing' && <span className="ml-2 bg-red-100 text-red-600 text-[10px] px-2 py-0.5 rounded-full font-bold">필수</span>}
+                                                    {(scope as any).isCustom ? (
+                                                        <div className="flex items-center gap-2">
+                                                            <input
+                                                                type="text"
+                                                                value={scope.label}
+                                                                onChange={(e) => handleScopeLabelChange(scope.id, e.target.value)}
+                                                                className="w-32 bg-white border border-slate-200 rounded px-2 py-1 text-sm focus:border-blue-500 outline-none"
+                                                                placeholder="공종명 입력"
+                                                            />
+                                                            <button onClick={() => handleRemoveScope(scope.id)} className="text-slate-300 hover:text-red-500 p-1 rounded-full hover:bg-red-50 transition-colors" title="공종 삭제">
+                                                                <Trash2 size={16} />
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <>
+                                                            {scope.label}
+                                                            {scope.id === 'licensing' && <span className="ml-2 bg-red-100 text-red-600 text-[10px] px-2 py-0.5 rounded-full font-bold">필수</span>}
+                                                        </>
+                                                    )}
                                                 </td>
                                                 <td className="py-4 text-right align-middle">
                                                     <div className="relative inline-block">
