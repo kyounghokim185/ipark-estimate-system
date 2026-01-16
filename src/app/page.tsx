@@ -970,16 +970,14 @@ export default function Page() {
                                         <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 pointer-events-none">m²</span>
                                     </div>
                                 </div>
-                                <div className="flex-1 px-1">
-                                    <input type="range" min="10" max="16530" value={area} onChange={e => setArea(Math.round(Number(e.target.value)))} className="w-full h-3 bg-slate-200 rounded-full appearance-none cursor-pointer accent-blue-600 no-print" />
-                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
+
                 {/* 4. Detailed List & Photos */}
-                <div id="section-detailed-list" className="bg-white rounded-[2rem] p-8 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-slate-100 print:break-inside-avoid">
+                < div id="section-detailed-list" className="bg-white rounded-[2rem] p-8 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-slate-100 print:break-inside-avoid" >
                     <div className="flex items-center justify-between mb-8">
                         <div className="flex items-center gap-4">
                             <h3 className="text-lg font-extrabold flex items-center gap-3 text-slate-800 border-l-4 border-blue-600 pl-3">
@@ -1059,9 +1057,9 @@ export default function Page() {
                                                 <td className="py-4 text-right align-middle">
                                                     <div className="relative inline-block">
                                                         <input
-                                                            type="number"
-                                                            value={Math.round(scope.area)}
-                                                            onChange={e => handleScopeChange(scope.id, 'area', Math.round(Number(e.target.value)))}
+                                                            type="text"
+                                                            value={formatNumber(scope.area)}
+                                                            onChange={e => handleScopeChange(scope.id, 'area', parseNumber(e.target.value))}
                                                             disabled={scope.isFixedRate}
                                                             className={`w-20 text-right font-medium bg-transparent border-b border-transparent focus:border-blue-300 outline-none transition-colors ${scope.isFixedRate ? 'text-slate-400 cursor-not-allowed' : 'text-slate-600'}`}
                                                         />
@@ -1070,11 +1068,11 @@ export default function Page() {
                                                 </td>
                                                 <td className="py-4 text-right align-middle">
                                                     <input
-                                                        type="number"
-                                                        value={derivedUnitPrice}
+                                                        type="text"
+                                                        value={formatNumber(derivedUnitPrice)}
                                                         onChange={e => {
                                                             if (!hasDetails) {
-                                                                handleScopeChange(scope.id, 'unitPrice', Number(e.target.value));
+                                                                handleScopeChange(scope.id, 'unitPrice', parseNumber(e.target.value));
                                                             }
                                                         }}
                                                         disabled={hasDetails} // Disable if driven by details
@@ -1082,17 +1080,20 @@ export default function Page() {
                                                     />
                                                 </td>
                                                 <td className="py-4 text-right font-black text-slate-800 tracking-tight text-base align-middle w-48">
-                                                    <input
-                                                        type="number"
-                                                        value={finalAmount}
-                                                        onChange={e => {
-                                                            if (!hasDetails) {
-                                                                handleAmountChange(scope.id, Number(e.target.value));
-                                                            }
-                                                        }}
-                                                        disabled={hasDetails} // Disable if driven by details (Amount is sum of details)
-                                                        className={`w-full text-right font-black tracking-tight bg-transparent border-b border-transparent focus:border-blue-300 outline-none transition-colors ${hasDetails ? 'text-slate-400 cursor-not-allowed' : 'text-slate-800'}`}
-                                                    />
+                                                    <div className="relative w-full">
+                                                        <input
+                                                            type="text"
+                                                            value={formatNumber(finalAmount)}
+                                                            onChange={e => {
+                                                                if (!hasDetails) {
+                                                                    handleAmountChange(scope.id, parseNumber(e.target.value));
+                                                                }
+                                                            }}
+                                                            disabled={hasDetails} // Disable if driven by details (Amount is sum of details)
+                                                            className={`w-full text-right font-black tracking-tight bg-transparent border-b border-transparent focus:border-blue-300 outline-none transition-colors pr-6 ${hasDetails ? 'text-slate-400 cursor-not-allowed' : 'text-slate-800'}`}
+                                                        />
+                                                        <span className="absolute right-0 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-bold pointer-events-none">원</span>
+                                                    </div>
                                                 </td>
                                                 <td className="py-4 pl-6 align-middle"><input type="text" value={scope.remarks} onChange={e => handleScopeChange(scope.id, 'remarks', e.target.value)} className="w-full bg-transparent border-b border-transparent focus:border-blue-300 outline-none text-slate-600 placeholder:text-slate-300 transition-colors" placeholder="-" /></td>
                                             </tr>
@@ -1297,10 +1298,10 @@ export default function Page() {
                             </motion.div>
                         )}
                     </AnimatePresence>
-                </div>
+                </div >
 
                 {/* 5. Footer Banner & Tip */}
-                <div className="grid grid-cols-1 md:grid-cols-1 gap-6 print:hidden">
+                < div className="grid grid-cols-1 md:grid-cols-1 gap-6 print:hidden" >
                     <div id="section-budget-tip" className="bg-amber-50 rounded-[2rem] p-8 border border-amber-100 flex gap-4 items-start">
                         <div className="bg-orange-100 p-2 rounded-full text-orange-500"><Lightbulb size={20} /></div>
                         <div>
@@ -1310,10 +1311,10 @@ export default function Page() {
                             </p>
                         </div>
                     </div>
-                </div>
+                </div >
 
-            </main>
+            </main >
 
-        </div>
+        </div >
     );
 }
