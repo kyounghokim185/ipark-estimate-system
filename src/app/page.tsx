@@ -942,11 +942,10 @@ export default function Page() {
                                     <div className="relative flex-1">
                                         <input
                                             type="number"
-                                            step="0.1"
-                                            value={Number((area * 0.3025).toFixed(1))}
+                                            value={Math.round(area * 0.3025)}
                                             onChange={(e) => {
                                                 const val = Number(e.target.value);
-                                                if (!isNaN(val)) setArea(Number((val / 0.3025).toFixed(2)));
+                                                if (!isNaN(val)) setArea(Math.round(val / 0.3025));
                                             }}
                                             onFocus={(e) => e.target.select()}
                                             className="w-full bg-white border border-slate-200 rounded-2xl px-4 py-3 font-black text-xl text-center text-slate-800 outline-none shadow-sm focus:border-blue-500 transition-all"
@@ -955,12 +954,12 @@ export default function Page() {
                                     </div>
                                     <span className="text-slate-300">⇄</span>
                                     <div className="relative flex-1">
-                                        <input type="number" step="0.01" value={area} onChange={e => setArea(Number(e.target.value))} onFocus={(e) => e.target.select()} className="w-full bg-white border border-slate-200 rounded-2xl px-4 py-3 font-black text-xl text-center text-slate-800 outline-none shadow-sm focus:border-blue-500 transition-all" />
+                                        <input type="number" value={area} onChange={e => setArea(Math.round(Number(e.target.value)))} onFocus={(e) => e.target.select()} className="w-full bg-white border border-slate-200 rounded-2xl px-4 py-3 font-black text-xl text-center text-slate-800 outline-none shadow-sm focus:border-blue-500 transition-all" />
                                         <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 pointer-events-none">m²</span>
                                     </div>
                                 </div>
                                 <div className="flex-1 px-1">
-                                    <input type="range" min="10" max="16530" value={area} onChange={e => setArea(Number(e.target.value))} className="w-full h-3 bg-slate-200 rounded-full appearance-none cursor-pointer accent-blue-600 no-print" />
+                                    <input type="range" min="10" max="16530" value={area} onChange={e => setArea(Math.round(Number(e.target.value)))} className="w-full h-3 bg-slate-200 rounded-full appearance-none cursor-pointer accent-blue-600 no-print" />
                                 </div>
                             </div>
                         </div>
@@ -1049,8 +1048,8 @@ export default function Page() {
                                                     <div className="relative inline-block">
                                                         <input
                                                             type="number"
-                                                            value={scope.isFixedRate ? scope.area : Number(scope.area.toFixed(1))}
-                                                            onChange={e => handleScopeChange(scope.id, 'area', Number(e.target.value))}
+                                                            value={Math.round(scope.area)}
+                                                            onChange={e => handleScopeChange(scope.id, 'area', Math.round(Number(e.target.value)))}
                                                             disabled={scope.isFixedRate}
                                                             className={`w-20 text-right font-medium bg-transparent border-b border-transparent focus:border-blue-300 outline-none transition-colors ${scope.isFixedRate ? 'text-slate-400 cursor-not-allowed' : 'text-slate-600'}`}
                                                         />
