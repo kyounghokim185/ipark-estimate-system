@@ -96,7 +96,7 @@ export default function Page() {
     const [constructionType, setConstructionType] = useState<ConstructionType>('general');
 
     const [detailedScopes, setDetailedScopes] = useState([
-        { id: 'licensing', label: '인허가', active: true, area: 1, unitPrice: 0, remarks: '', isFixedRate: true, details: [] as any[], isExpanded: false },
+        { id: 'licensing', label: '인허가 및 설계', active: true, area: 1, unitPrice: 0, remarks: '', isFixedRate: true, details: ['건축/대수선', '교통', '소방', '설비', '전기', '장애인편의시설'] as any[], isExpanded: false },
         { id: 'design', label: '설계', active: true, area: 100, unitPrice: 0, remarks: '', isFixedRate: false, details: [] as any[], isExpanded: false },
         { id: 'temporary', label: '가설', active: true, area: 100, unitPrice: 0, remarks: '', isFixedRate: false, details: [] as any[], isExpanded: false },
         { id: 'demolition', label: '철거', active: true, area: 100, unitPrice: 0, remarks: '', isFixedRate: false, details: [] as any[], isExpanded: false },
@@ -860,7 +860,7 @@ export default function Page() {
                                                             disabled={scope.isFixedRate}
                                                             className={`w-20 text-right font-medium bg-transparent border-b border-transparent focus:border-blue-300 outline-none transition-colors ${scope.isFixedRate ? 'text-slate-400 cursor-not-allowed' : 'text-slate-600'}`}
                                                         />
-                                                        {scope.isFixedRate && <span className="absolute right-0 -mr-6 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-bold">식</span>}
+                                                        {(scope.isFixedRate || scope.area === 1) && <span className="absolute right-0 -mr-6 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-bold">식</span>}
                                                     </div>
                                                 </td>
                                                 <td className="py-4 text-right align-middle">
