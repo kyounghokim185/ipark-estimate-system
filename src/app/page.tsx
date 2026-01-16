@@ -33,7 +33,7 @@ import jsPDF from 'jspdf';
 import pptxgen from 'pptxgenjs';
 import { Image as ImageIcon, Presentation } from 'lucide-react';
 
-// Last deployed: 2026-01-16 13:30
+// Last deployed: 2026-01-16 13:55
 
 // --- Types ---
 type ZoneType = 'fashion' | 'living' | 'fnb' | 'back';
