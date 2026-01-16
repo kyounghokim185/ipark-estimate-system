@@ -30,6 +30,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import pptxgen from 'pptxgenjs';
+import { Image as ImageIcon, Presentation } from 'lucide-react';
 
 // --- Types ---
 type ZoneType = 'fashion' | 'living' | 'fnb' | 'back';
@@ -118,6 +120,7 @@ export default function Page() {
     // Persistence State
     const [currentId, setCurrentId] = useState<string | null>(null);
     const [isSaving, setIsSaving] = useState(false);
+    const [isExporting, setIsExporting] = useState(false);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const attachmentInputRef = useRef<HTMLInputElement>(null);
@@ -385,224 +388,264 @@ export default function Page() {
 
     const totals = calculateTotal();
 
-    const handleDownloadPDF = async () => {
+    // Helper to capture pages for PDF/PPT/JPG
+    const captureEstimatePages = async () => {
         const element = document.getElementById('estimate-content');
-        if (!element) return;
+        if (!element) return null;
 
+        // Shared print styles
+        const applyPdfStyles = (clone: HTMLElement) => {
+            clone.style.width = '800px';
+            clone.style.margin = '0 auto';
+            clone.style.padding = '20px';
+            clone.style.backgroundColor = 'white';
+            clone.style.color = 'black';
+            clone.style.position = 'absolute';
+            clone.style.left = '0';
+            clone.style.top = '0';
+            clone.style.boxSizing = 'border-box';
+            clone.style.lineHeight = '1.4';
+            clone.style.height = 'auto';
+            clone.style.overflow = 'visible';
+
+            const allElements = clone.querySelectorAll('*');
+            allElements.forEach((el: any) => {
+                el.style.overflow = 'visible';
+                el.style.whiteSpace = 'normal';
+                el.style.height = 'auto';
+                el.style.wordBreak = 'break-word';
+            });
+
+            const tables = clone.querySelectorAll('table');
+            tables.forEach((el: any) => {
+                el.style.tableLayout = 'fixed';
+                el.style.width = '100%';
+            });
+
+            const cells = clone.querySelectorAll('td, th');
+            cells.forEach((el: any) => {
+                el.style.wordBreak = 'break-word';
+                el.style.overflowWrap = 'anywhere';
+                el.style.whiteSpace = 'normal';
+                el.style.height = 'auto';
+            });
+
+            const inputs = clone.querySelectorAll('input, select');
+            inputs.forEach((el: any) => {
+                el.style.border = 'none';
+                el.style.backgroundColor = 'transparent';
+                el.style.appearance = 'none';
+                el.style.textAlign = el.type === 'number' || el.classList.contains('text-right') ? 'right' : 'left';
+                el.style.padding = '0';
+                el.style.color = 'black';
+                el.style.fontSize = '12px';
+            });
+
+            const tableCells = clone.querySelectorAll('th, td');
+            tableCells.forEach((el: any) => {
+                el.style.padding = '6px 4px';
+                el.style.fontSize = '12px';
+            });
+
+            const noPrints = clone.querySelectorAll('.no-print');
+            noPrints.forEach((el: any) => el.style.display = 'none');
+
+            const banner = clone.querySelector('.bg-amber-50');
+            if (banner) {
+                const parent = banner.closest('.grid');
+                if (parent && parent.classList.contains('md:grid-cols-1')) {
+                    (parent as HTMLElement).style.display = 'none';
+                }
+            }
+        };
+
+        const commonOptions = {
+            scale: 3,
+            useCORS: true,
+            logging: false,
+            windowWidth: 1400
+        };
+
+        const canvas1 = await html2canvas(element, {
+            ...commonOptions,
+            onclone: (documentClone) => {
+                const clone = documentClone.querySelector('#estimate-content') as HTMLElement;
+                if (clone) {
+                    applyPdfStyles(clone);
+                    const detaileList = clone.querySelector('#section-detailed-list') as HTMLElement;
+                    if (detaileList) detaileList.style.display = 'none';
+                    const photos = clone.querySelector('#section-photos') as HTMLElement;
+                    if (photos) photos.style.display = 'none';
+                    const attachments = clone.querySelector('#section-attachments') as HTMLElement;
+                    if (attachments) attachments.style.display = 'none';
+                    const tip = clone.querySelector('#section-budget-tip') as HTMLElement;
+                    if (tip) tip.style.display = 'none';
+                }
+            }
+        });
+
+        const canvas2 = await html2canvas(element, {
+            ...commonOptions,
+            onclone: (documentClone) => {
+                const clone = documentClone.querySelector('#estimate-content') as HTMLElement;
+                if (clone) {
+                    applyPdfStyles(clone);
+                    const hero = clone.querySelector('#hero-section') as HTMLElement;
+                    if (hero) hero.style.display = 'none';
+                    const basicInfo = clone.querySelector('#section-basic-info') as HTMLElement;
+                    if (basicInfo) basicInfo.style.display = 'none';
+                    const criteria = clone.querySelector('#section-criteria') as HTMLElement;
+                    if (criteria) criteria.style.display = 'none';
+                    const photos = clone.querySelector('#section-photos') as HTMLElement;
+                    if (photos) photos.style.display = 'none';
+                    const attachments = clone.querySelector('#section-attachments') as HTMLElement;
+                    if (attachments) attachments.style.display = 'none';
+                    const tip = clone.querySelector('#section-budget-tip') as HTMLElement;
+                    if (tip) tip.style.display = 'none';
+                }
+            }
+        });
+
+        const canvas3 = await html2canvas(element, {
+            ...commonOptions,
+            onclone: (documentClone) => {
+                const clone = documentClone.querySelector('#estimate-content') as HTMLElement;
+                if (clone) {
+                    applyPdfStyles(clone);
+                    const hero = clone.querySelector('#hero-section') as HTMLElement;
+                    if (hero) hero.style.display = 'none';
+                    const basicInfo = clone.querySelector('#section-basic-info') as HTMLElement;
+                    if (basicInfo) basicInfo.style.display = 'none';
+                    const criteria = clone.querySelector('#section-criteria') as HTMLElement;
+                    if (criteria) criteria.style.display = 'none';
+                    const detailedSection = clone.querySelector('#section-detailed-list');
+                    if (detailedSection) (detailedSection as HTMLElement).style.display = 'none';
+                    const photos = clone.querySelector('#section-photos') as HTMLElement;
+                    if (photos) {
+                        photos.style.display = 'block';
+                        photos.style.margin = '0';
+                        photos.style.borderTop = 'none';
+                    }
+                    const attachments = clone.querySelector('#section-attachments') as HTMLElement;
+                    if (attachments) {
+                        attachments.style.display = 'block';
+                        attachments.style.marginTop = '20px';
+                    }
+                    const tip = clone.querySelector('#section-budget-tip') as HTMLElement;
+                    if (tip) {
+                        tip.style.display = 'flex';
+                        const parent = tip.closest('.grid');
+                        if (parent && (parent as HTMLElement).classList.contains('print:hidden')) {
+                            (parent as HTMLElement).classList.remove('print:hidden');
+                            (parent as HTMLElement).style.display = 'grid';
+                        }
+                    }
+                }
+            }
+        });
+
+        return [canvas1, canvas2, canvas3];
+    };
+
+    const handleDownloadPDF = async () => {
+        setIsExporting(true);
         try {
-            // Helper to apply common styles for A4 fit
-            const applyPdfStyles = (clone: HTMLElement) => {
-                clone.style.width = '800px'; // Optimization for A4 width
-                clone.style.margin = '0 auto';
-                clone.style.padding = '20px'; // Compact padding
-                clone.style.backgroundColor = 'white';
-                clone.style.color = 'black';
-                clone.style.position = 'absolute';
-                clone.style.left = '0';
-                clone.style.top = '0';
-                clone.style.boxSizing = 'border-box';
-                clone.style.lineHeight = '1.4';
-                clone.style.height = 'auto'; // Force auto height
-                clone.style.overflow = 'visible'; // Allow overflow
-
-                // Force text wrapping and visible overflow for ALL elements
-                const allElements = clone.querySelectorAll('*');
-                allElements.forEach((el: any) => {
-                    el.style.overflow = 'visible';
-                    el.style.whiteSpace = 'normal';
-                    el.style.height = 'auto';
-                    el.style.wordBreak = 'break-word'; // Break long words
-                });
-
-                // Specific Table Fixes
-                const tables = clone.querySelectorAll('table');
-                tables.forEach((el: any) => {
-                    el.style.tableLayout = 'fixed';
-                    el.style.width = '100%';
-                });
-
-                const cells = clone.querySelectorAll('td, th');
-                cells.forEach((el: any) => {
-                    el.style.wordBreak = 'break-word';
-                    el.style.overflowWrap = 'anywhere';
-                    el.style.whiteSpace = 'normal'; // Wrap text
-                    el.style.height = 'auto';
-                });
-
-                // Ensure all inputs look like text
-                const inputs = clone.querySelectorAll('input, select');
-                inputs.forEach((el: any) => {
-                    el.style.border = 'none';
-                    el.style.backgroundColor = 'transparent';
-                    el.style.appearance = 'none';
-                    el.style.textAlign = el.type === 'number' || el.classList.contains('text-right') ? 'right' : 'left';
-                    el.style.padding = '0';
-                    el.style.color = 'black';
-                    el.style.fontSize = '12px';
-                });
-
-                // Compact Table Cells
-                const tableCells = clone.querySelectorAll('th, td');
-                tableCells.forEach((el: any) => {
-                    el.style.padding = '6px 4px';
-                    el.style.fontSize = '12px';
-                });
-
-                // Hide print-specific and unnecessary elements
-                const noPrints = clone.querySelectorAll('.no-print');
-                noPrints.forEach((el: any) => el.style.display = 'none');
-
-                // Hide header/footer areas if captured (Default behavior, override in Page 3)
-                const banner = clone.querySelector('.bg-amber-50');
-                if (banner) {
-                    // Try to hide the parent container of the banner if it's the footer grid
-                    const parent = banner.closest('.grid');
-                    if (parent && parent.classList.contains('md:grid-cols-1')) {
-                        (parent as HTMLElement).style.display = 'none';
-                    }
-                }
-            };
-
-            // 1. Capture Page 1: Hero + Basic Info + Criteria
-            const canvas1 = await html2canvas(element, {
-                scale: 3,
-                useCORS: true,
-                logging: false,
-                windowWidth: 1400,
-                onclone: (documentClone) => {
-                    const clone = documentClone.querySelector('#estimate-content') as HTMLElement;
-                    if (clone) {
-                        applyPdfStyles(clone);
-                        // Hide Page 2 & 3 content
-                        const detaileList = clone.querySelector('#section-detailed-list') as HTMLElement;
-                        if (detaileList) detaileList.style.display = 'none';
-                        const photos = clone.querySelector('#section-photos') as HTMLElement;
-                        if (photos) photos.style.display = 'none';
-                        const attachments = clone.querySelector('#section-attachments') as HTMLElement;
-                        if (attachments) attachments.style.display = 'none';
-                        const tip = clone.querySelector('#section-budget-tip') as HTMLElement;
-                        if (tip) tip.style.display = 'none';
-                    }
-                }
-            });
-
-            // 2. Capture Page 2: Detailed List (Costs) ONLY
-            const canvas2 = await html2canvas(element, {
-                scale: 3,
-                useCORS: true,
-                logging: false,
-                windowWidth: 1400,
-                onclone: (documentClone) => {
-                    const clone = documentClone.querySelector('#estimate-content') as HTMLElement;
-                    if (clone) {
-                        applyPdfStyles(clone);
-                        // Hide Page 1 content
-                        const hero = clone.querySelector('#hero-section') as HTMLElement;
-                        if (hero) hero.style.display = 'none';
-                        const basicInfo = clone.querySelector('#section-basic-info') as HTMLElement;
-                        if (basicInfo) basicInfo.style.display = 'none';
-                        const criteria = clone.querySelector('#section-criteria') as HTMLElement;
-                        if (criteria) criteria.style.display = 'none';
-
-                        // Show Detailed List BUT Hide Photos/Attachments/Tip (Page 3 items)
-                        const photos = clone.querySelector('#section-photos') as HTMLElement;
-                        if (photos) photos.style.display = 'none';
-                        const attachments = clone.querySelector('#section-attachments') as HTMLElement;
-                        if (attachments) attachments.style.display = 'none';
-                        const tip = clone.querySelector('#section-budget-tip') as HTMLElement;
-                        if (tip) tip.style.display = 'none';
-                    }
-                }
-            });
-
-            // 3. Capture Page 3: Site Photos + Attachments + Budget Tip
-            const canvas3 = await html2canvas(element, {
-                scale: 3,
-                useCORS: true,
-                logging: false,
-                windowWidth: 1400,
-                onclone: (documentClone) => {
-                    const clone = documentClone.querySelector('#estimate-content') as HTMLElement;
-                    if (clone) {
-                        applyPdfStyles(clone);
-                        // Hide Page 1 content
-                        const hero = clone.querySelector('#hero-section') as HTMLElement;
-                        if (hero) hero.style.display = 'none';
-                        const basicInfo = clone.querySelector('#section-basic-info') as HTMLElement;
-                        if (basicInfo) basicInfo.style.display = 'none';
-                        const criteria = clone.querySelector('#section-criteria') as HTMLElement;
-                        if (criteria) criteria.style.display = 'none';
-
-                        // Hide Detailed List (Page 2)
-                        const detailedSection = clone.querySelector('#section-detailed-list');
-                        if (detailedSection) (detailedSection as HTMLElement).style.display = 'none';
-
-                        // Show Photos, Attachments, Tip explicitly
-                        // They are outside #section-detailed-list now (based on previous edits structure check)
-                        const photos = clone.querySelector('#section-photos') as HTMLElement;
-                        if (photos) {
-                            photos.style.display = 'block';
-                            photos.style.margin = '0';
-                            photos.style.borderTop = 'none';
-                        }
-                        const attachments = clone.querySelector('#section-attachments') as HTMLElement;
-                        if (attachments) {
-                            attachments.style.display = 'block';
-                            attachments.style.marginTop = '20px';
-                        }
-                        const tip = clone.querySelector('#section-budget-tip') as HTMLElement;
-                        if (tip) {
-                            // Ensure parent is visible if needed, but since we targeted the specific div, just show it
-                            tip.style.display = 'flex'; // It was flex
-                            const parent = tip.closest('.grid');
-                            if (parent && (parent as HTMLElement).classList.contains('print:hidden')) {
-                                (parent as HTMLElement).classList.remove('print:hidden');
-                                (parent as HTMLElement).style.display = 'grid';
-                            }
-                        }
-                    }
-                }
-            });
+            const canvases = await captureEstimatePages();
+            if (!canvases) return;
 
             const pdf = new jsPDF('p', 'mm', 'a4');
             const pdfWidth = pdf.internal.pageSize.getWidth();
             const pdfHeight = pdf.internal.pageSize.getHeight();
 
-            // Add Page 1
-            const imgData1 = canvas1.toDataURL('image/png');
-            const imgHeight1 = (canvas1.height * pdfWidth) / canvas1.width;
-            pdf.addImage(imgData1, 'PNG', 0, 0, pdfWidth, imgHeight1);
+            canvases.forEach((canvas, index) => {
+                if (index > 0) pdf.addPage();
+                const imgData = canvas.toDataURL('image/png');
+                const imgHeight = (canvas.height * pdfWidth) / canvas.width;
 
-            // Add Page 2
-            pdf.addPage();
-            const imgData2 = canvas2.toDataURL('image/png');
-            const imgHeight2 = (canvas2.height * pdfWidth) / canvas2.width;
-
-            if (imgHeight2 > pdfHeight) {
-                let heightLeft = imgHeight2;
-                let position = 0;
-                pdf.addImage(imgData2, 'PNG', 0, position, pdfWidth, imgHeight2);
-                heightLeft -= pdfHeight;
-                while (heightLeft >= 0) {
-                    position = heightLeft - imgHeight2;
-                    pdf.addPage();
-                    pdf.addImage(imgData2, 'PNG', 0, position, pdfWidth, imgHeight2);
+                if (index === 1 && imgHeight > pdfHeight) {
+                    let heightLeft = imgHeight;
+                    let position = 0;
+                    pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
                     heightLeft -= pdfHeight;
+                    while (heightLeft >= 0) {
+                        position = heightLeft - imgHeight;
+                        pdf.addPage();
+                        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+                        heightLeft -= pdfHeight;
+                    }
+                } else {
+                    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, imgHeight);
                 }
-            } else {
-                pdf.addImage(imgData2, 'PNG', 0, 0, pdfWidth, imgHeight2);
-            }
-
-            // Add Page 3
-            pdf.addPage();
-            const imgData3 = canvas3.toDataURL('image/png');
-            const imgHeight3 = (canvas3.height * pdfWidth) / canvas3.width;
-            pdf.addImage(imgData3, 'PNG', 0, 0, pdfWidth, imgHeight3);
+            });
 
             pdf.save(`${projectInfo.name}_견적서.pdf`);
         } catch (error) {
             console.error('PDF Generation Error:', error);
             alert('PDF 생성 중 오류가 발생했습니다.');
+        } finally {
+            setIsExporting(false);
+        }
+    };
+
+    const handleDownloadJPG = async () => {
+        setIsExporting(true);
+        try {
+            const canvases = await captureEstimatePages();
+            if (!canvases) return;
+
+            const totalHeight = canvases.reduce((acc, c) => acc + c.height, 0);
+            const maxWidth = Math.max(...canvases.map(c => c.width));
+
+            const combinedCanvas = document.createElement('canvas');
+            combinedCanvas.width = maxWidth;
+            combinedCanvas.height = totalHeight;
+            const ctx = combinedCanvas.getContext('2d');
+            if (!ctx) return;
+
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, combinedCanvas.width, combinedCanvas.height);
+
+            let currentY = 0;
+            canvases.forEach(c => {
+                ctx.drawImage(c, 0, currentY);
+                currentY += c.height;
+            });
+
+            const link = document.createElement('a');
+            link.download = `${projectInfo.name}_견적서.jpg`;
+            link.href = combinedCanvas.toDataURL('image/jpeg', 0.9);
+            link.click();
+
+        } catch (error) {
+            console.error('JPG Generation Error:', error);
+            alert('JPG 생성 중 오류가 발생했습니다.');
+        } finally {
+            setIsExporting(false);
+        }
+    };
+
+    const handleDownloadPPT = async () => {
+        setIsExporting(true);
+        try {
+            const canvases = await captureEstimatePages();
+            if (!canvases) return;
+
+            const pres = new pptxgen();
+            pres.layout = 'LAYOUT_A4';
+
+            canvases.forEach(c => {
+                const slide = pres.addSlide();
+                const imgData = c.toDataURL('image/png');
+                slide.addImage({ data: imgData, x: 0, y: 0, w: '100%', h: '100%', sizing: { type: 'contain', w: '100%', h: '100%' } });
+            });
+
+            await pres.writeFile({ fileName: `${projectInfo.name}_견적서.pptx` });
+
+        } catch (error) {
+            console.error('PPT Generation Error:', error);
+            alert('PPT 생성 중 오류가 발생했습니다.');
+        } finally {
+            setIsExporting(false);
         }
     };
 
@@ -648,9 +691,17 @@ export default function Page() {
                                 {projectInfo.isPending ? '공사 기간 미정' : new Date().toLocaleDateString() + ' 기준'}
                             </span>
                         </div>
-                        <button onClick={handleDownloadPDF} className="bg-white/5 hover:bg-white/10 border border-white/10 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all backdrop-blur-sm no-print text-slate-200 hover:text-white">
-                            <Download size={16} /> PDF 다운로드
-                        </button>
+                        <div className="flex gap-2">
+                            <button onClick={handleDownloadPDF} disabled={isExporting} className="bg-white/5 hover:bg-white/10 border border-white/10 px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all backdrop-blur-sm no-print text-slate-200 hover:text-white disabled:opacity-50">
+                                <Download size={16} /> PDF
+                            </button>
+                            <button onClick={handleDownloadJPG} disabled={isExporting} className="bg-blue-600/30 hover:bg-blue-600/50 border border-blue-400/30 px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all backdrop-blur-sm no-print text-blue-100 hover:text-white disabled:opacity-50">
+                                <ImageIcon size={16} /> JPG
+                            </button>
+                            <button onClick={handleDownloadPPT} disabled={isExporting} className="bg-orange-600/30 hover:bg-orange-600/50 border border-orange-400/30 px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all backdrop-blur-sm no-print text-orange-100 hover:text-white disabled:opacity-50">
+                                <Presentation size={16} /> PPT
+                            </button>
+                        </div>
                     </div>
 
                     <h2 className="text-2xl md:text-5xl font-black mb-4 md:mb-6 tracking-tight leading-tight">{projectInfo.name || '공사명 미입력'}</h2>
