@@ -398,6 +398,25 @@ export default function Page() {
         setPhotos(photos.filter(p => p.id !== id));
     };
 
+    // --- Helpers ---
+    const formatNumber = (num: number | string | undefined | null) => {
+        if (num === undefined || num === null || num === '') return '';
+        const n = Number(num);
+        if (isNaN(n)) return '';
+        // If it's an integer, standard toLocaleString. 
+        // If it has decimals (like area), showing decimals is important.
+        // User asked for "comma applied to all numbers". 
+        // For Area: 30.5 -> "30.5"
+        // For Price: 10000 -> "10,000"
+        return n.toLocaleString(undefined, { maximumFractionDigits: 1 });
+    };
+
+    const parseNumber = (str: string) => {
+        // Remove commas and convert to number
+        const val = Number(str.replaceAll(',', ''));
+        return isNaN(val) ? 0 : val;
+    };
+
     const calculateTotal = () => {
         let subtotal = 0;
         const visibleScopes = detailedScopes.filter(s => {
@@ -408,13 +427,17 @@ export default function Page() {
         const activeItems = visibleScopes.filter(s => s.active);
 
         activeItems.forEach(s => {
+            // Apply Area Precision Logic: Round to 1 decimal place for calculation
+            const calcedArea = Math.round(s.area * 10) / 10;
+
             // If details exist, use sum of details. Otherwise, use main scope cost.
             if (s.details && s.details.length > 0) {
                 s.details.forEach((d: any) => {
-                    subtotal += Math.round(d.area * d.unitPrice);
+                    const detailArea = Math.round(d.area * 10) / 10;
+                    subtotal += Math.round(detailArea * d.unitPrice);
                 });
             } else {
-                subtotal += Math.round(s.area * s.unitPrice);
+                subtotal += Math.round(calcedArea * s.unitPrice);
             }
         });
 
@@ -440,7 +463,7 @@ export default function Page() {
 
         const overhead = insurance + safety + profit;
         const total = subtotal + overhead;
-        const overheadRate = total > 0 ? (overhead / subtotal) : 0; // For reference if needed
+        // const overheadRate = total > 0 ? (overhead / subtotal) : 0;
 
         return { subtotal, overhead, insurance, safety, profit, total };
     };
@@ -941,10 +964,10 @@ export default function Page() {
                                 <div className="flex items-center gap-3">
                                     <div className="relative flex-1">
                                         <input
-                                            type="number"
-                                            value={Math.round(area * 0.3025)}
+                                            type="text"
+                                            value={formatNumber(Math.round(area * 0.3025))}
                                             onChange={(e) => {
-                                                const val = Number(e.target.value);
+                                                const val = parseNumber(e.target.value);
                                                 if (!isNaN(val)) setArea(Math.round(val / 0.3025));
                                             }}
                                             onFocus={(e) => e.target.select()}
@@ -954,7 +977,7 @@ export default function Page() {
                                     </div>
                                     <span className="text-slate-300">⇄</span>
                                     <div className="relative flex-1">
-                                        <input type="number" value={area} onChange={e => setArea(Math.round(Number(e.target.value)))} onFocus={(e) => e.target.select()} className="w-full bg-white border border-slate-200 rounded-2xl px-4 py-3 font-black text-xl text-center text-slate-800 outline-none shadow-sm focus:border-blue-500 transition-all" />
+                                        <input type="text" value={formatNumber(area)} onChange={e => setArea(parseNumber(e.target.value))} onFocus={(e) => e.target.select()} className="w-full bg-white border border-slate-200 rounded-2xl px-4 py-3 font-black text-xl text-center text-slate-800 outline-none shadow-sm focus:border-blue-500 transition-all" />
                                         <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 pointer-events-none">m²</span>
                                     </div>
                                 </div>
@@ -1107,14 +1130,14 @@ export default function Page() {
                                                                             </div>
                                                                             <div className="col-span-2 flex items-center gap-2">
                                                                                 <span className="text-[10px] text-slate-400 font-bold w-10">면적</span>
-                                                                                <input type="number" value={detail.area} onChange={e => updateDetail(scope.id, detail.id, 'area', Number(e.target.value))} className="w-full text-sm text-right font-medium text-slate-600 bg-slate-50 rounded-lg px-2 py-1 outline-none focus:ring-1 focus:ring-blue-200" />
+                                                                                <input type="text" value={formatNumber(detail.area)} onChange={e => updateDetail(scope.id, detail.id, 'area', parseNumber(e.target.value))} className="w-full text-sm text-right font-medium text-slate-600 bg-slate-50 rounded-lg px-2 py-1 outline-none focus:ring-1 focus:ring-blue-200" />
                                                                             </div>
                                                                             <div className="col-span-3 flex items-center gap-2">
                                                                                 <span className="text-[10px] text-slate-400 font-bold w-10">단가</span>
-                                                                                <input type="number" value={detail.unitPrice} onChange={e => updateDetail(scope.id, detail.id, 'unitPrice', Number(e.target.value))} className="w-full text-sm text-right font-medium text-slate-600 bg-slate-50 rounded-lg px-2 py-1 outline-none focus:ring-1 focus:ring-blue-200" />
+                                                                                <input type="text" value={formatNumber(detail.unitPrice)} onChange={e => updateDetail(scope.id, detail.id, 'unitPrice', parseNumber(e.target.value))} className="w-full text-sm text-right font-medium text-slate-600 bg-slate-50 rounded-lg px-2 py-1 outline-none focus:ring-1 focus:ring-blue-200" />
                                                                             </div>
                                                                             <div className="col-span-3 text-right font-bold text-slate-800 text-sm">
-                                                                                {(detail.area * detail.unitPrice).toLocaleString()}원
+                                                                                {(Math.round((Math.round(detail.area * 10) / 10) * detail.unitPrice)).toLocaleString()}원
                                                                             </div>
                                                                             <div className="col-span-12 md:col-span-11 mt-2 md:mt-0 flex items-center gap-2">
                                                                                 <input type="text" placeholder="비고" value={detail.remarks} onChange={e => updateDetail(scope.id, detail.id, 'remarks', e.target.value)} className="w-full text-xs text-slate-500 bg-transparent outline-none placeholder:text-slate-300 border-b border-transparent focus:border-slate-200" />
