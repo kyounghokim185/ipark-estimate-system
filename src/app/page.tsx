@@ -395,36 +395,43 @@ export default function Page() {
 
         // Shared print styles
         const applyPdfStyles = (clone: HTMLElement) => {
-            clone.style.width = '800px';
+            clone.style.width = '1200px';
+            clone.style.maxWidth = 'none';
             clone.style.margin = '0 auto';
-            clone.style.padding = '20px';
+            clone.style.padding = '40px';
             clone.style.backgroundColor = 'white';
             clone.style.color = 'black';
             clone.style.position = 'absolute';
             clone.style.left = '0';
             clone.style.top = '0';
             clone.style.boxSizing = 'border-box';
-            clone.style.lineHeight = '1.4';
+            clone.style.lineHeight = '1.5';
             clone.style.height = 'auto';
             clone.style.overflow = 'visible';
+            clone.style.fontSize = '14px';
 
             const allElements = clone.querySelectorAll('*');
             allElements.forEach((el: any) => {
                 el.style.overflow = 'visible';
                 el.style.whiteSpace = 'normal';
                 el.style.height = 'auto';
-                el.style.wordBreak = 'break-word';
+                el.style.wordBreak = 'keep-all'; // Better for Korean text
+                el.style.overflowWrap = 'break-word';
             });
 
             const tables = clone.querySelectorAll('table');
             tables.forEach((el: any) => {
                 el.style.tableLayout = 'fixed';
                 el.style.width = '100%';
+
+                // Keep headers readable
+                const ths = el.querySelectorAll('th');
+                ths.forEach((th: any) => th.style.whiteSpace = 'nowrap');
             });
 
-            const cells = clone.querySelectorAll('td, th');
+            const cells = clone.querySelectorAll('td');
             cells.forEach((el: any) => {
-                el.style.wordBreak = 'break-word';
+                el.style.wordBreak = 'keep-all';
                 el.style.overflowWrap = 'anywhere';
                 el.style.whiteSpace = 'normal';
                 el.style.height = 'auto';
@@ -438,13 +445,14 @@ export default function Page() {
                 el.style.textAlign = el.type === 'number' || el.classList.contains('text-right') ? 'right' : 'left';
                 el.style.padding = '0';
                 el.style.color = 'black';
-                el.style.fontSize = '12px';
+                el.style.fontSize = 'inherit';
+                el.style.width = '100%';
             });
 
             const tableCells = clone.querySelectorAll('th, td');
             tableCells.forEach((el: any) => {
-                el.style.padding = '6px 4px';
-                el.style.fontSize = '12px';
+                el.style.padding = '12px 8px';
+                el.style.fontSize = '14px';
             });
 
             const noPrints = clone.querySelectorAll('.no-print');
@@ -460,10 +468,10 @@ export default function Page() {
         };
 
         const commonOptions = {
-            scale: 3,
+            scale: 2, // Use 2x scale for better performance with larger width
             useCORS: true,
             logging: false,
-            windowWidth: 1400
+            windowWidth: 1600 // Wide virtual window
         };
 
         const canvas1 = await html2canvas(element, {
@@ -630,7 +638,23 @@ export default function Page() {
             const canvases = await captureEstimatePages();
             if (!canvases) return;
 
-            const pres = new pptxgen();
+            // Safe instantiation of pptxgenjs
+            let pres;
+            try {
+                pres = new pptxgen();
+            } catch (e) {
+                // Try default export if direct new fails (Next.js/ESM interop)
+                // @ts-ignore
+                if (typeof pptxgen.default === 'function') {
+                    // @ts-ignore
+                    pres = new pptxgen.default();
+                } else {
+                    throw e;
+                }
+            }
+
+            if (!pres) throw new Error('PPTX Generator failed to initialize');
+
             pres.layout = 'LAYOUT_A4';
 
             canvases.forEach(c => {
@@ -643,7 +667,7 @@ export default function Page() {
 
         } catch (error) {
             console.error('PPT Generation Error:', error);
-            alert('PPT 생성 중 오류가 발생했습니다.');
+            alert(`PPT 생성 중 오류: ${error instanceof Error ? error.message : '알 수 없는 오류'}`);
         } finally {
             setIsExporting(false);
         }
