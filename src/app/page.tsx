@@ -143,6 +143,7 @@ export default function Page() {
 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const attachmentInputRef = useRef<HTMLInputElement>(null);
+    const isLoadingRef = useRef(false); // Flag to prevent auto-calculation on load
 
     useEffect(() => {
         // Load Estimate if ID is present
@@ -155,6 +156,7 @@ export default function Page() {
                 const estimates = JSON.parse(saved);
                 const target = estimates.find((e: any) => e.id === id);
                 if (target) {
+                    isLoadingRef.current = true; // Block effects
                     setCurrentId(target.id);
                     setProjectInfo(target.projectInfo);
                     setArea(target.data.area);
@@ -163,6 +165,10 @@ export default function Page() {
                     setConstructionType(target.data.constructionType);
                     setDetailedScopes(target.data.detailedScopes);
                     setPhotos(target.data.photos || []);
+
+                    setTimeout(() => {
+                        isLoadingRef.current = false; // Re-enable effects after state settles
+                    }, 500);
                 }
             }
         }
@@ -212,6 +218,7 @@ export default function Page() {
 
 
     useEffect(() => {
+        if (isLoadingRef.current) return;
         // Convert GLOBAL Area (m2) to Pyeong for the scopes
         const pyeongArea = area * 0.3025;
         // setDetailedScopes(prev => prev.map(scope => ({ ...scope, area: pyeongArea })));
@@ -248,6 +255,7 @@ export default function Page() {
     const currentGradeMultiplier = getGradeMultiplier(grade, area * 0.3025);
 
     useEffect(() => {
+        if (isLoadingRef.current) return;
         const pyeong = area * 0.3025;
 
 
