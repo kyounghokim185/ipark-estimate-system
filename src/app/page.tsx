@@ -387,25 +387,67 @@ export default function Page() {
         if (!element) return;
 
         try {
+            // Helper to apply common styles for A4 fit
+            const applyPdfStyles = (clone: HTMLElement) => {
+                clone.style.width = '800px'; // Optimization for A4 width
+                clone.style.margin = '0 auto';
+                clone.style.padding = '20px'; // Compact padding
+                clone.style.backgroundColor = 'white';
+                clone.style.color = 'black';
+                clone.style.position = 'absolute';
+                clone.style.left = '0';
+                clone.style.top = '0';
+                clone.style.boxSizing = 'border-box';
+
+                // Ensure all inputs look like text
+                const inputs = clone.querySelectorAll('input, select');
+                inputs.forEach((el: any) => {
+                    el.style.border = 'none';
+                    el.style.backgroundColor = 'transparent';
+                    el.style.appearance = 'none';
+                    el.style.textAlign = el.type === 'number' || el.classList.contains('text-right') ? 'right' : 'left';
+                    el.style.padding = '0';
+                    el.style.color = 'black';
+                    el.style.fontSize = '12px';
+                });
+
+                // Compact Table Cells
+                const tableCells = clone.querySelectorAll('th, td');
+                tableCells.forEach((el: any) => {
+                    el.style.padding = '6px 4px';
+                    el.style.fontSize = '12px';
+                });
+
+                // Hide print-specific and unnecessary elements
+                const noPrints = clone.querySelectorAll('.no-print');
+                noPrints.forEach((el: any) => el.style.display = 'none');
+
+                // Hide header/footer areas if captured
+                const banner = clone.querySelector('.bg-amber-50');
+                if (banner) (banner.parentElement as HTMLElement).style.display = 'none';
+            };
+
             // 1. Capture Page 1: Hero + Basic Info + Criteria
             const canvas1 = await html2canvas(element, {
-                scale: 2, // High resolution
+                scale: 2,
                 useCORS: true,
                 logging: false,
-                windowWidth: 1400, // Trigger desktop layout
+                windowWidth: 1400,
                 onclone: (documentClone) => {
                     const clone = documentClone.querySelector('#estimate-content') as HTMLElement;
                     if (clone) {
                         applyPdfStyles(clone);
-                        // Hide detailed list for Page 1
-                        const detailedList = clone.querySelector('#section-detailed-list') as HTMLElement;
-                        if (detailedList) detailedList.style.display = 'none';
-                        // Keep Hero, Basic Info, Criteria VISIBLE
+                        // Hide Page 2 & 3 content
+                        const detaileList = clone.querySelector('#section-detailed-list') as HTMLElement;
+                        if (detaileList) detaileList.style.display = 'none';
+                        const photos = clone.querySelector('#section-photos') as HTMLElement; // Assuming photos might be separated later, but here they are inside detailed list usually.
+                        // Actually Photos are inside #section-detailed-list in current DOM structure.
+                        // So hiding #section-detailed-list hides both Costs and Photos.
                     }
                 }
             });
 
-            // 2. Capture Page 2: Detailed List (+ Photos if inside)
+            // 2. Capture Page 2: Detailed List (Costs) ONLY
             const canvas2 = await html2canvas(element, {
                 scale: 2,
                 useCORS: true,
@@ -415,8 +457,7 @@ export default function Page() {
                     const clone = documentClone.querySelector('#estimate-content') as HTMLElement;
                     if (clone) {
                         applyPdfStyles(clone);
-
-                        // Hide Top Sections
+                        // Hide Page 1 content
                         const hero = clone.querySelector('#hero-section') as HTMLElement;
                         if (hero) hero.style.display = 'none';
                         const basicInfo = clone.querySelector('#section-basic-info') as HTMLElement;
@@ -424,126 +465,94 @@ export default function Page() {
                         const criteria = clone.querySelector('#section-criteria') as HTMLElement;
                         if (criteria) criteria.style.display = 'none';
 
-                        // Show Detailed List (It's visible by default, but ensuring top sections gone makes it jump to top)
+                        // Show Detailed List BUT Hide Photos section designated for Page 3
+                        // Photos are at the bottom of #section-detailed-list check DOM
+                        // We need to target the Photo section specifically. 
+                        // In valid DOM it is: <div className="pt-8 border-t border-slate-100"> ... 
+                        // We can identify it by "현장 사진 대장" text or checking last child.
+                        const detailedSection = clone.querySelector('#section-detailed-list');
+                        if (detailedSection) {
+                            const photoContainer = Array.from(detailedSection.children).find(child => child.textContent?.includes('현장 사진 대장'));
+                            if (photoContainer) (photoContainer as HTMLElement).style.display = 'none';
+                        }
                     }
                 }
             });
 
-            // Helper to apply common styles
-            function applyPdfStyles(clone: HTMLElement) {
-                // 0. Width & Layout - narrower width makes text look larger on A4
-                clone.style.width = '800px';
-                clone.style.maxWidth = 'none';
-                clone.style.margin = '0 auto';
-                clone.style.padding = '15px'; // Drastically reduced from 40px
-                clone.style.backgroundColor = 'white';
-                clone.style.color = 'black';
-                clone.style.position = 'absolute';
-                clone.style.left = '0';
-                clone.style.top = '0';
-                clone.style.boxSizing = 'border-box';
+            // 3. Capture Page 3: Site Photos ONLY
+            const canvas3 = await html2canvas(element, {
+                scale: 2,
+                useCORS: true,
+                logging: false,
+                windowWidth: 1400,
+                onclone: (documentClone) => {
+                    const clone = documentClone.querySelector('#estimate-content') as HTMLElement;
+                    if (clone) {
+                        applyPdfStyles(clone);
+                        // Hide Page 1 content
+                        const hero = clone.querySelector('#hero-section') as HTMLElement;
+                        if (hero) hero.style.display = 'none';
+                        const basicInfo = clone.querySelector('#section-basic-info') as HTMLElement;
+                        if (basicInfo) basicInfo.style.display = 'none';
+                        const criteria = clone.querySelector('#section-criteria') as HTMLElement;
+                        if (criteria) criteria.style.display = 'none';
 
-                // Hero Style Override
-                const hero = clone.querySelector('#hero-section') as HTMLElement;
-                if (hero) {
-                    hero.style.backgroundColor = 'white';
-                    hero.style.color = 'black';
-                    hero.style.boxShadow = 'none';
-                    hero.style.borderBottom = '2px solid black';
-                    hero.style.borderRadius = '0';
-                    hero.style.padding = '15px';
-                    hero.style.marginBottom = '15px';
-                    const texts = hero.querySelectorAll('*');
-                    texts.forEach((el: any) => {
-                        el.style.color = 'black';
-                        el.style.borderColor = '#e2e8f0';
-                    });
-                    const decorations = hero.querySelectorAll('.absolute');
-                    decorations.forEach((el: any) => el.style.display = 'none');
+                        // In Detailed Section, Hide everything EXCEPT Photos
+                        const detailedSection = clone.querySelector('#section-detailed-list');
+                        if (detailedSection) {
+                            // Hide title "A. 직접 공사비", Table, "B. 간접 공사비"
+                            // Best approach: hide all children, then show the photo container
+                            Array.from(detailedSection.children).forEach((child: any) => {
+                                child.style.display = 'none';
+                            });
+
+                            const photoContainer = Array.from(detailedSection.children).find(child => child.textContent?.includes('현장 사진 대장'));
+                            if (photoContainer) {
+                                (photoContainer as HTMLElement).style.display = 'block';
+                                // Remove top border/padding for clean look
+                                (photoContainer as HTMLElement).style.borderTop = 'none';
+                                (photoContainer as HTMLElement).style.paddingTop = '0';
+                            }
+                        }
+                    }
                 }
-
-                // Compact Sections (Basic Info, Criteria, Detailed List)
-                const sections = clone.querySelectorAll('#section-basic-info, #section-criteria, #section-detailed-list');
-                sections.forEach((el: any) => {
-                    el.style.padding = '15px'; // Compact padding
-                    el.style.borderRadius = '0';
-                    el.style.boxShadow = 'none';
-                    el.style.border = '1px solid #ccc';
-                    el.style.marginBottom = '15px';
-                });
-
-                // Input Fixes (No Border, Plain Text look)
-                const inputs = clone.querySelectorAll('input, select');
-                inputs.forEach((el: any) => {
-                    el.style.border = 'none';
-                    el.style.backgroundColor = 'transparent';
-                    el.style.appearance = 'none';
-                    el.style.textAlign = el.type === 'number' || el.classList.contains('text-right') ? 'right' : 'left';
-                    el.style.padding = '0';
-                    el.style.height = 'auto';
-                    el.style.width = '100%';
-                    el.style.color = 'black';
-                    el.style.fontSize = '11px'; // Smaller font for inputs
-                });
-
-                // Compact Table Cells
-                const tableCells = clone.querySelectorAll('th, td');
-                tableCells.forEach((el: any) => {
-                    el.style.padding = '4px 2px'; // Very compact padding
-                    el.style.fontSize = '11px'; // Smaller font
-                });
-
-                // Reduce headers size
-                const headers = clone.querySelectorAll('h2, h3, h4');
-                headers.forEach((el: any) => {
-                    el.style.fontSize = '14px'; // Enforce smaller headers
-                    el.style.marginBottom = '8px';
-                });
-
-                // General cleanups
-                const noPrints = clone.querySelectorAll('.no-print');
-                noPrints.forEach((el: any) => el.style.display = 'none');
-
-                const scrollables = clone.querySelectorAll('.overflow-x-auto');
-                scrollables.forEach((el: any) => {
-                    el.classList.remove('overflow-x-auto');
-                    el.style.overflow = 'visible';
-                });
-            }
+            });
 
             const pdf = new jsPDF('p', 'mm', 'a4');
             const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
 
             // Add Page 1
             const imgData1 = canvas1.toDataURL('image/png');
-            const pdfHeight1 = (canvas1.height * pdfWidth) / canvas1.width;
-            pdf.addImage(imgData1, 'PNG', 0, 0, pdfWidth, pdfHeight1);
+            const imgHeight1 = (canvas1.height * pdfWidth) / canvas1.width;
+            pdf.addImage(imgData1, 'PNG', 0, 0, pdfWidth, imgHeight1);
 
             // Add Page 2
             pdf.addPage();
             const imgData2 = canvas2.toDataURL('image/png');
-            const pdfHeight2 = (canvas2.height * pdfWidth) / canvas2.width;
-
-            // If Page 2 is very long, we might still need multi-page split for the list itself,
-            // but for now we put the list on Page 2. If the list is huge, we might need more logic.
-            // Assuming reasonable list size for this request.
-            if (pdfHeight2 > pdf.internal.pageSize.getHeight()) {
-                let heightLeft = pdfHeight2;
+            const imgHeight2 = (canvas2.height * pdfWidth) / canvas2.width;
+            // Handle overflow if Page 2 is too long (though usually it fits one page)
+            if (imgHeight2 > pdfHeight) {
+                // Simple split not perfect but fallback
+                let heightLeft = imgHeight2;
                 let position = 0;
-                const pageHeight = pdf.internal.pageSize.getHeight();
-
-                pdf.addImage(imgData2, 'PNG', 0, position, pdfWidth, pdfHeight2);
-                heightLeft -= pageHeight;
-
+                pdf.addImage(imgData2, 'PNG', 0, position, pdfWidth, imgHeight2);
+                heightLeft -= pdfHeight;
                 while (heightLeft >= 0) {
-                    position = heightLeft - pdfHeight2;
+                    position = heightLeft - imgHeight2;
                     pdf.addPage();
-                    pdf.addImage(imgData2, 'PNG', 0, position, pdfWidth, pdfHeight2);
-                    heightLeft -= pageHeight;
+                    pdf.addImage(imgData2, 'PNG', 0, position, pdfWidth, imgHeight2);
+                    heightLeft -= pdfHeight;
                 }
             } else {
-                pdf.addImage(imgData2, 'PNG', 0, 0, pdfWidth, pdfHeight2);
+                pdf.addImage(imgData2, 'PNG', 0, 0, pdfWidth, imgHeight2);
             }
+
+            // Add Page 3
+            pdf.addPage();
+            const imgData3 = canvas3.toDataURL('image/png');
+            const imgHeight3 = (canvas3.height * pdfWidth) / canvas3.width;
+            pdf.addImage(imgData3, 'PNG', 0, 0, pdfWidth, imgHeight3);
 
             pdf.save(`${projectInfo.name}_견적서.pdf`);
         } catch (error) {
@@ -963,15 +972,6 @@ export default function Page() {
                                 순공사비 기준 평당 단가는 약 <strong className="text-amber-900">{Math.round(totals.total / (area * 0.3025)).toLocaleString()}원</strong>입니다. 불필요한 마감재 스펙을 조정하면 예산을 절감할 수 있습니다.
                             </p>
                         </div>
-                    </div>
-
-                    <div className="bg-blue-600 rounded-[2rem] p-10 text-white text-center shadow-lg shadow-blue-600/20 relative overflow-hidden">
-                        <div className="relative z-10">
-                            <h3 className="text-2xl font-black mb-3">전문가 검토가 필요하신가요?</h3>
-                            <p className="text-blue-100 text-base mb-8 font-medium">상세 견적 검토는 총무팀으로 문의해주세요.</p>
-                        </div>
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-20 -mt-20 blur-3xl"></div>
-                        <div className="absolute bottom-0 left-0 w-64 h-64 bg-black/10 rounded-full -ml-20 -mb-20 blur-3xl"></div>
                     </div>
                 </div>
 
