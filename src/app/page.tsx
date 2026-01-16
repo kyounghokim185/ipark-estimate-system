@@ -112,6 +112,7 @@ export default function Page() {
     ]);
 
     const [photos, setPhotos] = useState<{ id: number, src: string, desc: string, date: string }[]>([]);
+    const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
 
     // Persistence State
     const [currentId, setCurrentId] = useState<string | null>(null);
@@ -398,6 +399,7 @@ export default function Page() {
                 clone.style.left = '0';
                 clone.style.top = '0';
                 clone.style.boxSizing = 'border-box';
+                clone.style.lineHeight = '1.5'; // Fix text cutoff
 
                 // Ensure all inputs look like text
                 const inputs = clone.querySelectorAll('input, select');
@@ -422,9 +424,15 @@ export default function Page() {
                 const noPrints = clone.querySelectorAll('.no-print');
                 noPrints.forEach((el: any) => el.style.display = 'none');
 
-                // Hide header/footer areas if captured
+                // Hide header/footer areas if captured (Default behavior, override in Page 3)
                 const banner = clone.querySelector('.bg-amber-50');
-                if (banner) (banner.parentElement as HTMLElement).style.display = 'none';
+                if (banner) {
+                    // Try to hide the parent container of the banner if it's the footer grid
+                    const parent = banner.closest('.grid');
+                    if (parent && parent.classList.contains('md:grid-cols-1')) {
+                        (parent as HTMLElement).style.display = 'none';
+                    }
+                }
             };
 
             // 1. Capture Page 1: Hero + Basic Info + Criteria
@@ -949,10 +957,10 @@ export default function Page() {
                         ) : (
                             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                                 {photos.map(p => (
-                                    <div key={p.id} className="group relative rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all">
+                                    <div key={p.id} className="group relative rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all cursor-pointer" onClick={() => setSelectedPhoto(p.src)}>
                                         <img src={p.src} className="w-full h-32 object-cover" alt="site" />
                                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 no-print">
-                                            <button onClick={() => removePhoto(p.id)} className="bg-white/90 p-2 rounded-full text-red-500 hover:text-red-600"><Trash2 size={16} /></button>
+                                            <button onClick={(e) => { e.stopPropagation(); removePhoto(p.id); }} className="bg-white/90 p-2 rounded-full text-red-500 hover:text-red-600"><Trash2 size={16} /></button>
                                         </div>
                                         <div className="p-2 bg-white text-xs font-bold text-center border-t text-slate-600">{p.date}</div>
                                     </div>
@@ -960,6 +968,35 @@ export default function Page() {
                             </div>
                         )}
                     </div>
+
+                    {/* Photo Modal */}
+                    <AnimatePresence>
+                        {selectedPhoto && (
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                onClick={() => setSelectedPhoto(null)}
+                                className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm"
+                            >
+                                <motion.img
+                                    initial={{ scale: 0.9, opacity: 0 }}
+                                    animate={{ scale: 1, opacity: 1 }}
+                                    exit={{ scale: 0.9, opacity: 0 }}
+                                    src={selectedPhoto}
+                                    className="max-w-full max-h-[90vh] rounded-lg shadow-2xl"
+                                    onClick={(e) => e.stopPropagation()}
+                                />
+                                <button
+                                    onClick={() => setSelectedPhoto(null)}
+                                    className="absolute top-6 right-6 text-white/50 hover:text-white transition-colors"
+                                >
+                                    <span className="sr-only">닫기</span>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                </button>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
 
                 {/* 5. Footer Banner & Tip */}
