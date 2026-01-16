@@ -100,7 +100,24 @@ export default function Page() {
     const [constructionType, setConstructionType] = useState<ConstructionType>('general');
 
     const [detailedScopes, setDetailedScopes] = useState([
-        { id: 'licensing', label: '인허가 및 설계', active: true, area: 1, unitPrice: 0, remarks: '', isFixedRate: true, details: ['건축/대수선', '교통', '소방', '설비', '전기', '장애인편의시설'] as any[], isExpanded: false },
+        {
+            id: 'licensing',
+            label: '인허가 및 설계',
+            active: true,
+            area: 1,
+            unitPrice: 0,
+            remarks: '',
+            isFixedRate: true,
+            details: [
+                { id: 'd1', desc: '건축/대수선', area: 1, unitPrice: 0, remarks: '' },
+                { id: 'd2', desc: '교통', area: 1, unitPrice: 0, remarks: '' },
+                { id: 'd3', desc: '소방', area: 1, unitPrice: 0, remarks: '' },
+                { id: 'd4', desc: '설비', area: 1, unitPrice: 0, remarks: '' },
+                { id: 'd5', desc: '전기', area: 1, unitPrice: 0, remarks: '' },
+                { id: 'd6', desc: '장애인 편의 시설 공사', area: 1, unitPrice: 0, remarks: '' }
+            ],
+            isExpanded: true
+        },
         { id: 'design', label: '설계', active: true, area: 100, unitPrice: 0, remarks: '', isFixedRate: false, details: [] as any[], isExpanded: false },
         { id: 'temporary', label: '가설', active: true, area: 100, unitPrice: 0, remarks: '', isFixedRate: false, details: [] as any[], isExpanded: false },
         { id: 'demolition', label: '철거', active: true, area: 100, unitPrice: 0, remarks: '', isFixedRate: false, details: [] as any[], isExpanded: false },
@@ -350,14 +367,13 @@ export default function Page() {
         const activeItems = visibleScopes.filter(s => s.active);
 
         activeItems.forEach(s => {
-            // Main scope cost
-            subtotal += Math.round(s.area * s.unitPrice);
-
-            // Detailed items cost
+            // If details exist, use sum of details. Otherwise, use main scope cost.
             if (s.details && s.details.length > 0) {
                 s.details.forEach((d: any) => {
                     subtotal += Math.round(d.area * d.unitPrice);
                 });
+            } else {
+                subtotal += Math.round(s.area * s.unitPrice);
             }
         });
 
@@ -926,8 +942,8 @@ export default function Page() {
                                     <th className="py-4 pl-4 w-12 no-print"></th>
                                     <th className="py-4 text-slate-400 font-bold uppercase text-xs">공종명</th>
                                     <th className="py-4 text-right text-slate-400 font-bold uppercase text-xs">면적(평)</th>
-                                    <th className="py-4 text-right text-slate-400 font-bold uppercase text-xs">단가(원)</th>
-                                    <th className="py-4 text-right text-slate-400 font-bold uppercase text-xs">금액(원)</th>
+                                    <th className="py-4 text-right text-slate-400 font-bold uppercase text-xs w-40">단가(원)</th>
+                                    <th className="py-4 text-right text-slate-400 font-bold uppercase text-xs w-48">금액(원)</th>
                                     <th className="py-4 pl-6 text-slate-400 font-bold uppercase text-xs">특이사항</th>
                                 </tr>
                             </thead>
@@ -935,6 +951,18 @@ export default function Page() {
                                 {detailedScopes.map((scope) => {
                                     if (constructionType === 'restoration' && ['furniture', 'signage'].includes(scope.id)) return null;
                                     if (constructionType !== 'permit' && scope.id === 'licensing') return null;
+
+                                    // Calculation Logic
+                                    const hasDetails = scope.details && scope.details.length > 0;
+                                    const detailSum = hasDetails ? scope.details.reduce((acc: number, cur: any) => acc + (cur.area * cur.unitPrice), 0) : 0;
+
+                                    // If details exist, Amount is sum of details. Main Unit Price is derived.
+                                    // Otherwise, Amount is Area * Unit Price.
+                                    const finalAmount = hasDetails ? detailSum : Math.round(scope.area * scope.unitPrice);
+
+                                    // If details exist and Area is valid, Unit Price is derived
+                                    const derivedUnitPrice = (hasDetails && scope.area > 0) ? Math.round(detailSum / scope.area) : scope.unitPrice;
+
                                     return (
                                         <React.Fragment key={scope.id}>
                                             <tr className={`transition-colors hover:bg-slate-50/50 ${scope.active ? '' : 'opacity-40 grayscale'}`}>
@@ -969,16 +997,18 @@ export default function Page() {
                                                 <td className="py-4 text-right align-middle">
                                                     <input
                                                         type="number"
-                                                        value={scope.unitPrice}
-                                                        onChange={e => handleScopeChange(scope.id, 'unitPrice', Number(e.target.value))} // Note: This might be overwritten by auto-calc if logic isn't blocked, but user requested editing.
-                                                        className="w-24 text-right font-medium text-slate-600 tracking-tight bg-transparent border-b border-transparent focus:border-blue-300 outline-none transition-colors"
+                                                        value={derivedUnitPrice}
+                                                        onChange={e => {
+                                                            if (!hasDetails) {
+                                                                handleScopeChange(scope.id, 'unitPrice', Number(e.target.value));
+                                                            }
+                                                        }}
+                                                        disabled={hasDetails} // Disable if driven by details
+                                                        className={`w-40 text-right font-medium tracking-tight bg-transparent border-b border-transparent focus:border-blue-300 outline-none transition-colors ${hasDetails ? 'text-slate-400 cursor-not-allowed' : 'text-slate-600'}`}
                                                     />
                                                 </td>
-                                                <td className="py-4 text-right font-black text-slate-800 tracking-tight text-base align-middle">
-                                                    {Math.round(
-                                                        (scope.area * scope.unitPrice) +
-                                                        (scope.details ? scope.details.reduce((acc: number, cur: any) => acc + (cur.area * cur.unitPrice), 0) : 0)
-                                                    ).toLocaleString()}
+                                                <td className="py-4 text-right font-black text-slate-800 tracking-tight text-base align-middle w-48">
+                                                    {finalAmount.toLocaleString()}
                                                 </td>
                                                 <td className="py-4 pl-6 align-middle"><input type="text" value={scope.remarks} onChange={e => handleScopeChange(scope.id, 'remarks', e.target.value)} className="w-full bg-transparent border-b border-transparent focus:border-blue-300 outline-none text-slate-600 placeholder:text-slate-300 transition-colors" placeholder="-" /></td>
                                             </tr>
@@ -1004,26 +1034,26 @@ export default function Page() {
                                                                                 <input type="text" placeholder="항목명 (예: 타일)" value={detail.desc} onChange={e => updateDetail(scope.id, detail.id, 'desc', e.target.value)} className="w-full text-sm font-bold text-slate-700 bg-transparent outline-none placeholder:text-slate-300" />
                                                                             </div>
                                                                             <div className="col-span-2 flex items-center gap-2">
-                                                                                <span className="text-[10px] text-slate-400 font-bold w-8">면적</span>
+                                                                                <span className="text-[10px] text-slate-400 font-bold w-10">면적</span>
                                                                                 <input type="number" value={detail.area} onChange={e => updateDetail(scope.id, detail.id, 'area', Number(e.target.value))} className="w-full text-sm text-right font-medium text-slate-600 bg-slate-50 rounded-lg px-2 py-1 outline-none focus:ring-1 focus:ring-blue-200" />
                                                                             </div>
-                                                                            <div className="col-span-2 flex items-center gap-2">
-                                                                                <span className="text-[10px] text-slate-400 font-bold w-8">단가</span>
+                                                                            <div className="col-span-3 flex items-center gap-2">
+                                                                                <span className="text-[10px] text-slate-400 font-bold w-10">단가</span>
                                                                                 <input type="number" value={detail.unitPrice} onChange={e => updateDetail(scope.id, detail.id, 'unitPrice', Number(e.target.value))} className="w-full text-sm text-right font-medium text-slate-600 bg-slate-50 rounded-lg px-2 py-1 outline-none focus:ring-1 focus:ring-blue-200" />
                                                                             </div>
-                                                                            <div className="col-span-2 text-right font-bold text-slate-800 text-sm">
+                                                                            <div className="col-span-3 text-right font-bold text-slate-800 text-sm">
                                                                                 {(detail.area * detail.unitPrice).toLocaleString()}원
                                                                             </div>
-                                                                            <div className="col-span-2">
-                                                                                <input type="text" placeholder="비고" value={detail.remarks} onChange={e => updateDetail(scope.id, detail.id, 'remarks', e.target.value)} className="w-full text-xs text-slate-500 bg-transparent outline-none placeholder:text-slate-300" />
+                                                                            <div className="col-span-12 md:col-span-11 mt-2 md:mt-0 flex items-center gap-2">
+                                                                                <input type="text" placeholder="비고" value={detail.remarks} onChange={e => updateDetail(scope.id, detail.id, 'remarks', e.target.value)} className="w-full text-xs text-slate-500 bg-transparent outline-none placeholder:text-slate-300 border-b border-transparent focus:border-slate-200" />
                                                                             </div>
-                                                                            <div className="col-span-1 text-right">
+                                                                            <div className="absolute right-3 top-3">
                                                                                 <button onClick={() => removeDetail(scope.id, detail.id)} className="text-slate-300 hover:text-red-500 transition-colors p-1"><Trash2 size={14} /></button>
                                                                             </div>
                                                                         </div>
                                                                     ))}
                                                                     <div className="text-right text-xs font-bold text-slate-500 mt-2 p-2">
-                                                                        상세 합계: <span className="text-blue-600 text-sm ml-1">{scope.details.reduce((acc: number, cur: any) => acc + (cur.area * cur.unitPrice), 0).toLocaleString()}원</span>
+                                                                        상세 합계: <span className="text-blue-600 text-sm ml-1">{detailSum.toLocaleString()}원</span>
                                                                     </div>
                                                                 </div>
                                                             ) : (
