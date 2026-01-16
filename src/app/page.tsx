@@ -401,7 +401,7 @@ export default function Page() {
                 clone.style.left = '0';
                 clone.style.top = '0';
                 clone.style.boxSizing = 'border-box';
-                clone.style.lineHeight = '1.4'; // Good line height
+                clone.style.lineHeight = '1.4';
                 clone.style.height = 'auto'; // Force auto height
                 clone.style.overflow = 'visible'; // Allow overflow
 
@@ -411,6 +411,7 @@ export default function Page() {
                     el.style.overflow = 'visible';
                     el.style.whiteSpace = 'normal';
                     el.style.height = 'auto';
+                    el.style.wordBreak = 'break-word'; // Break long words
                 });
 
                 // Specific Table Fixes
@@ -464,7 +465,7 @@ export default function Page() {
 
             // 1. Capture Page 1: Hero + Basic Info + Criteria
             const canvas1 = await html2canvas(element, {
-                scale: 2,
+                scale: 3,
                 useCORS: true,
                 logging: false,
                 windowWidth: 1400,
@@ -475,16 +476,19 @@ export default function Page() {
                         // Hide Page 2 & 3 content
                         const detaileList = clone.querySelector('#section-detailed-list') as HTMLElement;
                         if (detaileList) detaileList.style.display = 'none';
-                        const photos = clone.querySelector('#section-photos') as HTMLElement; // Assuming photos might be separated later, but here they are inside detailed list usually.
-                        // Actually Photos are inside #section-detailed-list in current DOM structure.
-                        // So hiding #section-detailed-list hides both Costs and Photos.
+                        const photos = clone.querySelector('#section-photos') as HTMLElement;
+                        if (photos) photos.style.display = 'none';
+                        const attachments = clone.querySelector('#section-attachments') as HTMLElement;
+                        if (attachments) attachments.style.display = 'none';
+                        const tip = clone.querySelector('#section-budget-tip') as HTMLElement;
+                        if (tip) tip.style.display = 'none';
                     }
                 }
             });
 
             // 2. Capture Page 2: Detailed List (Costs) ONLY
             const canvas2 = await html2canvas(element, {
-                scale: 2,
+                scale: 3,
                 useCORS: true,
                 logging: false,
                 windowWidth: 1400,
@@ -500,23 +504,20 @@ export default function Page() {
                         const criteria = clone.querySelector('#section-criteria') as HTMLElement;
                         if (criteria) criteria.style.display = 'none';
 
-                        // Show Detailed List BUT Hide Photos section designated for Page 3
-                        // Photos are at the bottom of #section-detailed-list check DOM
-                        // We need to target the Photo section specifically. 
-                        // In valid DOM it is: <div className="pt-8 border-t border-slate-100"> ... 
-                        // We can identify it by "현장 사진 대장" text or checking last child.
-                        const detailedSection = clone.querySelector('#section-detailed-list');
-                        if (detailedSection) {
-                            const photoContainer = Array.from(detailedSection.children).find(child => child.textContent?.includes('현장 사진 대장'));
-                            if (photoContainer) (photoContainer as HTMLElement).style.display = 'none';
-                        }
+                        // Show Detailed List BUT Hide Photos/Attachments/Tip (Page 3 items)
+                        const photos = clone.querySelector('#section-photos') as HTMLElement;
+                        if (photos) photos.style.display = 'none';
+                        const attachments = clone.querySelector('#section-attachments') as HTMLElement;
+                        if (attachments) attachments.style.display = 'none';
+                        const tip = clone.querySelector('#section-budget-tip') as HTMLElement;
+                        if (tip) tip.style.display = 'none';
                     }
                 }
             });
 
-            // 3. Capture Page 3: Site Photos ONLY
+            // 3. Capture Page 3: Site Photos + Attachments + Budget Tip
             const canvas3 = await html2canvas(element, {
-                scale: 2,
+                scale: 3,
                 useCORS: true,
                 logging: false,
                 windowWidth: 1400,
@@ -532,21 +533,31 @@ export default function Page() {
                         const criteria = clone.querySelector('#section-criteria') as HTMLElement;
                         if (criteria) criteria.style.display = 'none';
 
-                        // In Detailed Section, Hide everything EXCEPT Photos
+                        // Hide Detailed List (Page 2)
                         const detailedSection = clone.querySelector('#section-detailed-list');
-                        if (detailedSection) {
-                            // Hide title "A. 직접 공사비", Table, "B. 간접 공사비"
-                            // Best approach: hide all children, then show the photo container
-                            Array.from(detailedSection.children).forEach((child: any) => {
-                                child.style.display = 'none';
-                            });
+                        if (detailedSection) (detailedSection as HTMLElement).style.display = 'none';
 
-                            const photoContainer = Array.from(detailedSection.children).find(child => child.textContent?.includes('현장 사진 대장'));
-                            if (photoContainer) {
-                                (photoContainer as HTMLElement).style.display = 'block';
-                                // Remove top border/padding for clean look
-                                (photoContainer as HTMLElement).style.borderTop = 'none';
-                                (photoContainer as HTMLElement).style.paddingTop = '0';
+                        // Show Photos, Attachments, Tip explicitly
+                        // They are outside #section-detailed-list now (based on previous edits structure check)
+                        const photos = clone.querySelector('#section-photos') as HTMLElement;
+                        if (photos) {
+                            photos.style.display = 'block';
+                            photos.style.margin = '0';
+                            photos.style.borderTop = 'none';
+                        }
+                        const attachments = clone.querySelector('#section-attachments') as HTMLElement;
+                        if (attachments) {
+                            attachments.style.display = 'block';
+                            attachments.style.marginTop = '20px';
+                        }
+                        const tip = clone.querySelector('#section-budget-tip') as HTMLElement;
+                        if (tip) {
+                            // Ensure parent is visible if needed, but since we targeted the specific div, just show it
+                            tip.style.display = 'flex'; // It was flex
+                            const parent = tip.closest('.grid');
+                            if (parent && (parent as HTMLElement).classList.contains('print:hidden')) {
+                                (parent as HTMLElement).classList.remove('print:hidden');
+                                (parent as HTMLElement).style.display = 'grid';
                             }
                         }
                     }
@@ -566,9 +577,8 @@ export default function Page() {
             pdf.addPage();
             const imgData2 = canvas2.toDataURL('image/png');
             const imgHeight2 = (canvas2.height * pdfWidth) / canvas2.width;
-            // Handle overflow if Page 2 is too long (though usually it fits one page)
+
             if (imgHeight2 > pdfHeight) {
-                // Simple split not perfect but fallback
                 let heightLeft = imgHeight2;
                 let position = 0;
                 pdf.addImage(imgData2, 'PNG', 0, position, pdfWidth, imgHeight2);
@@ -970,7 +980,7 @@ export default function Page() {
                     </div>
 
                     {/* Site Photos */}
-                    <div className="pt-8 border-t border-slate-100">
+                    <div id="section-photos" className="pt-8 border-t border-slate-100">
                         <div className="flex justify-between items-center mb-6">
                             <h4 className="font-bold flex items-center gap-2 text-slate-700"><Camera className="text-blue-600" size={18} /> 현장 사진 대장</h4>
                             <button onClick={() => fileInputRef.current?.click()} className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-2 transition-colors no-print"><Plus size={14} /> 사진 추가</button>
@@ -997,7 +1007,7 @@ export default function Page() {
                     </div>
 
                     {/* File Attachments */}
-                    <div className="pt-8 border-t border-slate-100 mt-8">
+                    <div id="section-attachments" className="pt-8 border-t border-slate-100 mt-8">
                         <div className="flex justify-between items-center mb-6">
                             <h4 className="font-bold flex items-center gap-2 text-slate-700"><FileText className="text-blue-600" size={18} /> 첨부 파일</h4>
                             <button onClick={() => attachmentInputRef.current?.click()} className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-2 transition-colors no-print"><Plus size={14} /> 파일 추가</button>
@@ -1074,7 +1084,7 @@ export default function Page() {
 
                 {/* 5. Footer Banner & Tip */}
                 <div className="grid grid-cols-1 md:grid-cols-1 gap-6 print:hidden">
-                    <div className="bg-amber-50 rounded-[2rem] p-8 border border-amber-100 flex gap-4 items-start">
+                    <div id="section-budget-tip" className="bg-amber-50 rounded-[2rem] p-8 border border-amber-100 flex gap-4 items-start">
                         <div className="bg-orange-100 p-2 rounded-full text-orange-500"><Lightbulb size={20} /></div>
                         <div>
                             <h4 className="font-bold text-amber-900 mb-2">예산 관리 TIP</h4>
