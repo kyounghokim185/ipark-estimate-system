@@ -86,7 +86,8 @@ export default function Page() {
         startDate: new Date().toISOString().split('T')[0],
         endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         author: '시설팀 홍길동',
-        remarks: ''
+        remarks: '',
+        isPending: false
     });
 
     const [area, setArea] = useState(100);
@@ -589,7 +590,9 @@ export default function Page() {
                     <div className="flex justify-between items-start mb-8 relative z-10">
                         <div className="flex items-center gap-3">
                             <span className="bg-white/10 backdrop-blur-md text-white border border-white/20 text-[11px] font-extrabold px-3 py-1.5 rounded-full tracking-wider shadow-sm">PROJECT ESTIMATE</span>
-                            <span className="text-slate-400 text-xs font-semibold">{new Date().toLocaleDateString()} 기준</span>
+                            <span className="text-slate-400 text-xs font-semibold">
+                                {projectInfo.isPending ? '공사 기간 미정' : new Date().toLocaleDateString() + ' 기준'}
+                            </span>
                         </div>
                         <button onClick={handleDownloadPDF} className="bg-white/5 hover:bg-white/10 border border-white/10 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all backdrop-blur-sm no-print text-slate-200 hover:text-white">
                             <Download size={16} /> PDF 다운로드
@@ -641,12 +644,29 @@ export default function Page() {
                             </div>
                         </div>
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-slate-400 uppercase tracking-wide ml-1">공사 기간</label>
-                            <div className="flex gap-4">
-                                <input type="date" value={projectInfo.startDate} onChange={e => setProjectInfo({ ...projectInfo, startDate: e.target.value })} className="flex-1 bg-slate-50 border-none rounded-2xl px-5 py-4 text-sm font-bold text-slate-600 focus:ring-2 focus:ring-blue-100 outline-none" />
-                                <span className="text-slate-300 self-center font-bold">~</span>
-                                <input type="date" value={projectInfo.endDate} onChange={e => setProjectInfo({ ...projectInfo, endDate: e.target.value })} className="flex-1 bg-slate-50 border-none rounded-2xl px-5 py-4 text-sm font-bold text-slate-600 focus:ring-2 focus:ring-blue-100 outline-none" />
+                            <div className="flex justify-between items-center">
+                                <label className="text-xs font-bold text-slate-400 uppercase tracking-wide ml-1">공사 기간</label>
+                                <label className="flex items-center gap-2 cursor-pointer no-print">
+                                    <input
+                                        type="checkbox"
+                                        checked={projectInfo.isPending}
+                                        onChange={e => setProjectInfo({ ...projectInfo, isPending: e.target.checked })}
+                                        className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                    />
+                                    <span className="text-xs font-bold text-slate-500">미정</span>
+                                </label>
                             </div>
+                            {projectInfo.isPending ? (
+                                <div className="w-full bg-slate-100 border-none rounded-2xl px-5 py-4 text-sm font-bold text-slate-400 text-center">
+                                    공사 기간 미정
+                                </div>
+                            ) : (
+                                <div className="flex gap-4">
+                                    <input type="date" value={projectInfo.startDate} onChange={e => setProjectInfo({ ...projectInfo, startDate: e.target.value })} className="flex-1 bg-slate-50 border-none rounded-2xl px-5 py-4 text-sm font-bold text-slate-600 focus:ring-2 focus:ring-blue-100 outline-none" />
+                                    <span className="text-slate-300 self-center font-bold">~</span>
+                                    <input type="date" value={projectInfo.endDate} onChange={e => setProjectInfo({ ...projectInfo, endDate: e.target.value })} className="flex-1 bg-slate-50 border-none rounded-2xl px-5 py-4 text-sm font-bold text-slate-600 focus:ring-2 focus:ring-blue-100 outline-none" />
+                                </div>
+                            )}
                         </div>
                         <div className="space-y-2">
                             <label className="text-xs font-bold text-slate-400 uppercase tracking-wide ml-1">특이사항</label>
