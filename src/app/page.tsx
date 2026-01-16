@@ -306,16 +306,91 @@ export default function Page() {
         setDetailedScopes(prev => prev.map(s => s.id === id ? { ...s, isExpanded: !s.isExpanded } : s));
     };
 
+    // --- Helpers ---
+    const formatNumber = (num: number | string | undefined | null) => {
+        if (num === undefined || num === null || num === '') return '';
+        const n = Number(num);
+        if (isNaN(n)) return '';
+        // Strict Integer (0 decimal places)
+        return n.toLocaleString(undefined, { maximumFractionDigits: 0 });
+    };
+
+    const parseNumber = (str: string) => {
+        // Remove commas and convert to number
+        const val = Number(str.replaceAll(',', ''));
+        return isNaN(val) ? 0 : val;
+    };
+
+    // Amount Edit Logic: '1 Sik' (Lump Sum) Rule
+    // When Amount is manually edited:
+    // 1. Area -> 1
+    // 2. Unit Price -> New Amount
+    // 3. (Optional) Mark as fixed rate? User said "Area OR Unit price becomes 1 sik". 
+    // Usually means "Area=1, UnitPrice=Total".
     const handleAmountChange = (id: string, newAmount: number) => {
         setDetailedScopes(prev => prev.map(s => {
             if (s.id === id) {
-                // Derived unit price logic: UnitPrice = Amount / Area
-                if (s.area === 0) return { ...s }; // Avoid division by zero
-                const newUnitPrice = Math.round(newAmount / s.area);
-                return { ...s, unitPrice: newUnitPrice };
+                return {
+                    ...s,
+                    area: 1,
+                    unitPrice: newAmount,
+                    // We might want to set isFixedRate=true if we want to lock it, 
+                    // but user just said "make it 1 sik". Keeping it editable is safer.
+                };
             }
             return s;
         }));
+    };
+
+    const calculateTotal = () => {
+        let subtotal = 0;
+        const visibleScopes = detailedScopes.filter(s => {
+            if (constructionType === 'restoration' && ['furniture', 'signage', 'facade'].includes(s.id)) return false;
+            if (constructionType !== 'permit' && s.id === 'licensing') return false;
+            return true;
+        });
+        const activeItems = visibleScopes.filter(s => s.active);
+
+        activeItems.forEach(s => {
+            // Strict Integer Logic: No decimals
+            const calcedArea = Math.round(s.area);
+
+            // If details exist, use sum of details. Otherwise, use main scope cost.
+            if (s.details && s.details.length > 0) {
+                s.details.forEach((d: any) => {
+                    const detailArea = Math.round(d.area);
+                    subtotal += Math.round(detailArea * d.unitPrice);
+                });
+            } else {
+                subtotal += Math.round(calcedArea * s.unitPrice);
+            }
+        });
+
+        // Breakdown: Insurance (7.5%), Profit (7.0%), Safety (Dynamic)
+        // 1. Insurance: 7.5%
+        const insurance = Math.round(subtotal * 0.075);
+
+        // 2. Safety Management Cost: General Construction (Gap)
+        // < 500 million: 2.93%
+        // 500 million ~ 5 billion: 1.86% + 5,349,000
+        // >= 5 billion: 1.97%
+        let safety = 0;
+        if (subtotal < 500000000) {
+            safety = Math.round(subtotal * 0.0293);
+        } else if (subtotal < 5000000000) {
+            safety = Math.round(subtotal * 0.0186) + 5349000;
+        } else {
+            safety = Math.round(subtotal * 0.0197);
+        }
+
+        // 3. Corporate Profit: 7.0%
+        const profit = Math.round(subtotal * 0.07);
+
+        const overhead = insurance + safety + profit;
+        const total = subtotal + overhead;
+        // const overheadRate = total > 0 ? (overhead / subtotal) : 0;
+
+        return { subtotal, overhead, insurance, safety, profit, total };
     };
 
     const handleAddScope = () => {
@@ -398,75 +473,7 @@ export default function Page() {
         setPhotos(photos.filter(p => p.id !== id));
     };
 
-    // --- Helpers ---
-    const formatNumber = (num: number | string | undefined | null) => {
-        if (num === undefined || num === null || num === '') return '';
-        const n = Number(num);
-        if (isNaN(n)) return '';
-        // If it's an integer, standard toLocaleString. 
-        // If it has decimals (like area), showing decimals is important.
-        // User asked for "comma applied to all numbers". 
-        // For Area: 30.5 -> "30.5"
-        // For Price: 10000 -> "10,000"
-        return n.toLocaleString(undefined, { maximumFractionDigits: 1 });
-    };
 
-    const parseNumber = (str: string) => {
-        // Remove commas and convert to number
-        const val = Number(str.replaceAll(',', ''));
-        return isNaN(val) ? 0 : val;
-    };
-
-    const calculateTotal = () => {
-        let subtotal = 0;
-        const visibleScopes = detailedScopes.filter(s => {
-            if (constructionType === 'restoration' && ['furniture', 'signage', 'facade'].includes(s.id)) return false;
-            if (constructionType !== 'permit' && s.id === 'licensing') return false;
-            return true;
-        });
-        const activeItems = visibleScopes.filter(s => s.active);
-
-        activeItems.forEach(s => {
-            // Apply Area Precision Logic: Round to 1 decimal place for calculation
-            const calcedArea = Math.round(s.area * 10) / 10;
-
-            // If details exist, use sum of details. Otherwise, use main scope cost.
-            if (s.details && s.details.length > 0) {
-                s.details.forEach((d: any) => {
-                    const detailArea = Math.round(d.area * 10) / 10;
-                    subtotal += Math.round(detailArea * d.unitPrice);
-                });
-            } else {
-                subtotal += Math.round(calcedArea * s.unitPrice);
-            }
-        });
-
-        // Breakdown: Insurance (7.5%), Profit (7.0%), Safety (Dynamic)
-        // 1. Insurance: 7.5%
-        const insurance = Math.round(subtotal * 0.075);
-
-        // 2. Safety Management Cost: General Construction (Gap)
-        // < 500 million: 2.93%
-        // 500 million ~ 5 billion: 1.86% + 5,349,000
-        // >= 5 billion: 1.97%
-        let safety = 0;
-        if (subtotal < 500000000) {
-            safety = Math.round(subtotal * 0.0293);
-        } else if (subtotal < 5000000000) {
-            safety = Math.round(subtotal * 0.0186) + 5349000;
-        } else {
-            safety = Math.round(subtotal * 0.0197);
-        }
-
-        // 3. Corporate Profit: 7.0%
-        const profit = Math.round(subtotal * 0.07);
-
-        const overhead = insurance + safety + profit;
-        const total = subtotal + overhead;
-        // const overheadRate = total > 0 ? (overhead / subtotal) : 0;
-
-        return { subtotal, overhead, insurance, safety, profit, total };
-    };
 
     const totals = calculateTotal();
 
@@ -655,129 +662,111 @@ export default function Page() {
     };
 
     const handleDownloadPDF = async () => {
-        setIsExporting(true);
-        try {
-            const canvases = await captureEstimatePages();
-            if (!canvases) return;
+        const canvases = await captureEstimatePages();
+        if (!canvases || canvases.length === 0) return;
 
-            const pdf = new jsPDF('p', 'mm', 'a4');
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = pdf.internal.pageSize.getHeight();
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const imgWidth = 210; // A4 Width in mm
+        const pageHeight = 297; // A4 Height in mm
+        const canvas = canvases[0];
 
-            canvases.forEach((canvas, index) => {
-                if (index > 0) pdf.addPage();
-                const imgData = canvas.toDataURL('image/png');
-                const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+        const imgData = canvas.toDataURL('image/jpeg', 1.0);
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        let heightLeft = imgHeight;
+        let position = 0;
 
-                if (index === 1 && imgHeight > pdfHeight) {
-                    let heightLeft = imgHeight;
-                    let position = 0;
-                    pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
-                    heightLeft -= pdfHeight;
-                    while (heightLeft >= 0) {
-                        position = heightLeft - imgHeight;
-                        pdf.addPage();
-                        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
-                        heightLeft -= pdfHeight;
-                    }
-                } else {
-                    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, imgHeight);
-                }
-            });
+        // First Page
+        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
 
-            pdf.save(`${projectInfo.name}_견적서.pdf`);
-        } catch (error) {
-            console.error('PDF Generation Error:', error);
-            alert('PDF 생성 중 오류가 발생했습니다.');
-        } finally {
-            setIsExporting(false);
+        // Subsequent Pages
+        while (heightLeft > 0) {
+            position = heightLeft - imgHeight;
+            pdf.addPage();
+            pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+            heightLeft -= pageHeight;
         }
+
+        pdf.save(`${projectInfo.name}_견적서.pdf`);
+        setIsExporting(false);
     };
 
     const handleDownloadJPG = async () => {
-        setIsExporting(true);
-        try {
-            const canvases = await captureEstimatePages();
-            if (!canvases) return;
+        const canvases = await captureEstimatePages();
+        if (!canvases || canvases.length === 0) return;
 
-            const totalHeight = canvases.reduce((acc, c) => acc + c.height, 0);
-            const maxWidth = Math.max(...canvases.map(c => c.width));
-
-            const combinedCanvas = document.createElement('canvas');
-            combinedCanvas.width = maxWidth;
-            combinedCanvas.height = totalHeight;
-            const ctx = combinedCanvas.getContext('2d');
-            if (!ctx) return;
-
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, combinedCanvas.width, combinedCanvas.height);
-
-            let currentY = 0;
-            canvases.forEach(c => {
-                ctx.drawImage(c, 0, currentY);
-                currentY += c.height;
-            });
-
-            const link = document.createElement('a');
-            link.download = `${projectInfo.name}_견적서.jpg`;
-            link.href = combinedCanvas.toDataURL('image/jpeg', 0.9);
-            link.click();
-
-        } catch (error) {
-            console.error('JPG Generation Error:', error);
-            alert('JPG 생성 중 오류가 발생했습니다.');
-        } finally {
-            setIsExporting(false);
-        }
+        const link = document.createElement('a');
+        link.href = canvases[0].toDataURL('image/jpeg', 1.0);
+        link.download = `${projectInfo.name}_견적서.jpg`;
+        link.click();
+        setIsExporting(false);
     };
 
     const handleDownloadPPT = async () => {
-        setIsExporting(true);
-        try {
-            const canvases = await captureEstimatePages();
-            if (!canvases) return;
+        const canvases = await captureEstimatePages();
+        if (!canvases || canvases.length === 0) return;
 
-            // Safe instantiation of pptxgenjs
-            let pres;
-            try {
-                // Try direct instantiation first (common in some environments)
-                pres = new pptxgen();
-            } catch (e) {
-                // Fallback for ESM/Next.js default export
-                try {
-                    // @ts-ignore
-                    pres = new pptxgen.default();
-                } catch (e2) {
-                    throw new Error('PPTX library failed to initialize.');
+        try {
+            // Dynamic import for pptxgenjs
+            const pptxgen = (await import('pptxgenjs')).default;
+            const pptx = new pptxgen();
+
+            const canvas = canvases[0];
+
+            // PPT Slicing Logic
+            pptx.layout = 'A4'; // width: 8.27, height: 11.69 inches
+
+            const slideWidthInch = 8.27; // A4 Width
+            const slideHeightInch = 11.69; // A4 Height
+
+            // Calc px height for one page slice
+            // Canvas Width corresponds to slideWidthInch
+            const pxPerInch = canvas.width / slideWidthInch;
+            const pageHeightPx = slideHeightInch * pxPerInch;
+
+            const numPages = Math.ceil(canvas.height / pageHeightPx);
+
+            for (let i = 0; i < numPages; i++) {
+                const slide = pptx.addSlide();
+
+                // Create temp canvas for slice
+                const sliceCanvas = document.createElement('canvas');
+                sliceCanvas.width = canvas.width;
+                const h = Math.min(pageHeightPx, canvas.height - (i * pageHeightPx));
+                sliceCanvas.height = h;
+
+                const ctx = sliceCanvas.getContext('2d');
+                if (ctx) {
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(0, 0, sliceCanvas.width, sliceCanvas.height);
+                    ctx.drawImage(
+                        canvas,
+                        0, i * pageHeightPx, canvas.width, h,
+                        0, 0, sliceCanvas.width, h
+                    );
+
+                    const sliceData = sliceCanvas.toDataURL('image/jpeg');
+
+                    // Add to slide
+                    const imgHeightInch = h / pxPerInch;
+
+                    slide.addImage({
+                        data: sliceData,
+                        x: 0,
+                        y: 0,
+                        w: slideWidthInch, // 100% width
+                        h: imgHeightInch
+                    });
                 }
             }
 
-            if (!pres) throw new Error('PPTX Generator failed to initialize');
-
-            pres.layout = 'LAYOUT_A4';
-
-            canvases.forEach(c => {
-                const slide = pres.addSlide();
-                const imgData = c.toDataURL('image/png');
-
-                // Use 'contain' to fit image within slide boundaries while maintaining aspect ratio
-                slide.addImage({
-                    data: imgData,
-                    x: 0,
-                    y: 0,
-                    w: '100%',
-                    h: '100%',
-                    sizing: { type: 'contain' }
-                });
-            });
-
-            await pres.writeFile({ fileName: `${projectInfo.name}_견적서.pptx` });
+            await pptx.writeFile({ fileName: `${projectInfo.name}_견적서.pptx` });
+            setIsExporting(false);
 
         } catch (error) {
-            console.error('PPT Generation Error:', error);
-            alert(`PPT 생성 중 오류: ${error instanceof Error ? error.message : '알 수 없는 오류'}`);
-        } finally {
+            console.error("PPT Generation Error", error);
             setIsExporting(false);
+            alert("PPT 생성 중 오류가 발생했습니다.");
         }
     };
 
@@ -1137,7 +1126,7 @@ export default function Page() {
                                                                                 <input type="text" value={formatNumber(detail.unitPrice)} onChange={e => updateDetail(scope.id, detail.id, 'unitPrice', parseNumber(e.target.value))} className="w-full text-sm text-right font-medium text-slate-600 bg-slate-50 rounded-lg px-2 py-1 outline-none focus:ring-1 focus:ring-blue-200" />
                                                                             </div>
                                                                             <div className="col-span-3 text-right font-bold text-slate-800 text-sm">
-                                                                                {(Math.round((Math.round(detail.area * 10) / 10) * detail.unitPrice)).toLocaleString()}원
+                                                                                {(Math.round(Math.round(detail.area) * detail.unitPrice)).toLocaleString()}원
                                                                             </div>
                                                                             <div className="col-span-12 md:col-span-11 mt-2 md:mt-0 flex items-center gap-2">
                                                                                 <input type="text" placeholder="비고" value={detail.remarks} onChange={e => updateDetail(scope.id, detail.id, 'remarks', e.target.value)} className="w-full text-xs text-slate-500 bg-transparent outline-none placeholder:text-slate-300 border-b border-transparent focus:border-slate-200" />
