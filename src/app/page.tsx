@@ -33,6 +33,8 @@ import jsPDF from 'jspdf';
 import pptxgen from 'pptxgenjs';
 import { Image as ImageIcon, Presentation } from 'lucide-react';
 
+// Last deployed: 2026-01-16 13:30
+
 // --- Types ---
 type ZoneType = 'fashion' | 'living' | 'fnb' | 'back';
 type GradeType = 'basic' | 'standard' | 'premium';
