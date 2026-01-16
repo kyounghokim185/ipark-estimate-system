@@ -113,12 +113,14 @@ export default function Page() {
 
     const [photos, setPhotos] = useState<{ id: number, src: string, desc: string, date: string }[]>([]);
     const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
+    const [attachments, setAttachments] = useState<{ id: string, name: string, size: number }[]>([]);
 
     // Persistence State
     const [currentId, setCurrentId] = useState<string | null>(null);
     const [isSaving, setIsSaving] = useState(false);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const attachmentInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         // Load Estimate if ID is present
@@ -399,7 +401,32 @@ export default function Page() {
                 clone.style.left = '0';
                 clone.style.top = '0';
                 clone.style.boxSizing = 'border-box';
-                clone.style.lineHeight = '1.5'; // Fix text cutoff
+                clone.style.lineHeight = '1.4'; // Good line height
+                clone.style.height = 'auto'; // Force auto height
+                clone.style.overflow = 'visible'; // Allow overflow
+
+                // Force text wrapping and visible overflow for ALL elements
+                const allElements = clone.querySelectorAll('*');
+                allElements.forEach((el: any) => {
+                    el.style.overflow = 'visible';
+                    el.style.whiteSpace = 'normal';
+                    el.style.height = 'auto';
+                });
+
+                // Specific Table Fixes
+                const tables = clone.querySelectorAll('table');
+                tables.forEach((el: any) => {
+                    el.style.tableLayout = 'fixed';
+                    el.style.width = '100%';
+                });
+
+                const cells = clone.querySelectorAll('td, th');
+                cells.forEach((el: any) => {
+                    el.style.wordBreak = 'break-word';
+                    el.style.overflowWrap = 'anywhere';
+                    el.style.whiteSpace = 'normal'; // Wrap text
+                    el.style.height = 'auto';
+                });
 
                 // Ensure all inputs look like text
                 const inputs = clone.querySelectorAll('input, select');
@@ -955,17 +982,63 @@ export default function Page() {
                                 <span className="text-slate-400 text-sm font-medium">등록된 현장 사진이 없습니다.</span>
                             </div>
                         ) : (
-                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {photos.map(p => (
                                     <div key={p.id} className="group relative rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all cursor-pointer" onClick={() => setSelectedPhoto(p.src)}>
-                                        <img src={p.src} className="w-full h-32 object-cover" alt="site" />
+                                        <img src={p.src} className="w-full h-64 object-cover" alt="site" />
                                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 no-print">
                                             <button onClick={(e) => { e.stopPropagation(); removePhoto(p.id); }} className="bg-white/90 p-2 rounded-full text-red-500 hover:text-red-600"><Trash2 size={16} /></button>
                                         </div>
-                                        <div className="p-2 bg-white text-xs font-bold text-center border-t text-slate-600">{p.date}</div>
+                                        <div className="p-3 bg-white text-sm font-bold text-center border-t text-slate-600">{p.date}</div>
                                     </div>
                                 ))}
                             </div>
+                        )}
+                    </div>
+
+                    {/* File Attachments */}
+                    <div className="pt-8 border-t border-slate-100 mt-8">
+                        <div className="flex justify-between items-center mb-6">
+                            <h4 className="font-bold flex items-center gap-2 text-slate-700"><FileText className="text-blue-600" size={18} /> 첨부 파일</h4>
+                            <button onClick={() => attachmentInputRef.current?.click()} className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-2 transition-colors no-print"><Plus size={14} /> 파일 추가</button>
+                            <input
+                                type="file"
+                                ref={attachmentInputRef}
+                                onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                        if (file.size > 10 * 1024 * 1024) {
+                                            alert('파일 크기는 10MB 이하여야 합니다.');
+                                            return;
+                                        }
+                                        setAttachments([...attachments, {
+                                            id: crypto.randomUUID(),
+                                            name: file.name,
+                                            size: file.size
+                                        }]);
+                                        e.target.value = '';
+                                    }
+                                }}
+                                className="hidden"
+                            />
+                        </div>
+                        {attachments.length === 0 ? (
+                            <div className="border-2 border-dashed border-slate-200 rounded-3xl py-8 text-center bg-slate-50/50">
+                                <span className="text-slate-400 text-sm font-medium">첨부된 파일이 없습니다.</span>
+                            </div>
+                        ) : (
+                            <ul className="space-y-2">
+                                {attachments.map(file => (
+                                    <li key={file.id} className="flex justify-between items-center bg-slate-50 px-4 py-3 rounded-xl border border-slate-100">
+                                        <div className="flex items-center gap-3">
+                                            <FileText size={16} className="text-slate-400" />
+                                            <span className="text-sm font-bold text-slate-700">{file.name}</span>
+                                            <span className="text-xs text-slate-400">({(file.size / 1024 / 1024).toFixed(2)} MB)</span>
+                                        </div>
+                                        <button onClick={() => setAttachments(attachments.filter(a => a.id !== file.id))} className="text-slate-400 hover:text-red-500 no-print"><Trash2 size={16} /></button>
+                                    </li>
+                                ))}
+                            </ul>
                         )}
                     </div>
 
